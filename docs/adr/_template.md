@@ -19,6 +19,14 @@ informed: {list everyone who is kept up-to-date on progress; and with whom there
 
 {Describe the context and problem statement, e.g., in free form using two to three sentences or in the form of an illustrative story. You may want to articulate the problem in form of a question and add links to collaboration boards or issue management systems.}
 
+<!-- LOCAL — Proof-of-concept evidence belongs here, restated as a finding rather than as a diff
+     against a system the reader is not assumed to know. Keep the citation for provenance; lead
+     with the finding.
+       Good — "Range-partitioning a 90-day-retention alerts table costs ~1,600 index relations per
+               tenant and delivers neither bulk expiry nor pruning unless queries carry a
+               timestamp predicate." (`database/init/01-schema.sql:300`)
+       Bad  — "The PoC partitioned alerts at 01-schema.sql:300 and never used DROP PARTITION." -->
+
 <!-- This is an optional element. Feel free to remove. -->
 ## Decision Drivers
 
@@ -33,6 +41,8 @@ informed: {list everyone who is kept up-to-date on progress; and with whom there
 * {title of option 3}
 * … <!-- numbers of options can vary -->
 
+<!-- LOCAL — An option with no honest case for it was never a real alternative; leave it out. -->
+
 ## Decision Outcome
 
 Chosen option: "{title of option 1}", because {justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force {force} | … | comes out best (see below)}.
@@ -44,10 +54,14 @@ Chosen option: "{title of option 1}", because {justification. e.g., only option,
 * Bad, because {negative consequence, e.g., compromising one or more desired qualities, …}
 * … <!-- numbers of consequences can vary -->
 
-<!-- This is an optional element. Feel free to remove. -->
+<!-- This is an optional element, but it is included in many ADRs. -->
 ### Confirmation
 
-{Describe how the implementation of/compliance with the ADR can/will be confirmed. Are the design that was decided for and its implementation in line with the decision made? E.g., a design/code review or a test with a library such as ArchUnit can help validate this. Not that although we classify this element as optional, it is included in many ADRs.}
+<!-- LOCAL — upstream MADR wording replaced. -->
+{How this decision is confirmed, and kept from eroding afterwards. Prefer a numbered list of
+assertions, each one a check that can fail — a test, not a convention. Where there is an
+enforceable surface, name the test. Where there isn't, say so plainly rather than falling back on
+"code review will catch it".}
 
 <!-- LOCAL — optional element. Obligations this decision places on *future* work, as opposed
      to Consequences, which is what follows from the decision itself. Write it for whoever hits the

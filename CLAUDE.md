@@ -22,22 +22,8 @@ copy code from it into this repo.
 Live in `docs/adr/` and follow [MADR 4.0](https://github.com/adr/madr). Start one by copying
 `docs/adr/_template.md`, or `_template-minimal.md` for a decision that doesn't block others.
 
-House conventions on top of MADR:
-
-- **`status` names its promotion trigger**, never a bare `proposed` — `proposed — accepted once the
-  Phase 1 slice confirms X`. A status with no named event never moves.
-- **Ask whether the decision behaves differently across the two deployment shapes.** Usually it
-  doesn't and there's nothing to write. When it does, say where the divergence is absorbed — a seam,
-  a provider, a config object — so it lives in one place. Minor cases belong in Decision Drivers,
-  substantive ones get their own subsection under Decision Outcome.
-- **`Confirmation` names tests where there is an enforceable surface.** "Each is a test, not a
-  convention" — this is what stops a design eroding after it's accepted.
-- **`Constraints imposed`** (a local addition) is for obligations on *future* work, as distinct from
-  Consequences, which is what follows from the decision itself. Optional.
-- **PoC evidence is restated as a finding**, not as a diff against a system the reader doesn't know.
-  "Range-partitioning a 90-day-retention alerts table costs ~1,600 index relations per tenant and
-  delivers neither bulk expiry nor pruning" — not "the PoC partitioned alerts at `01-schema.sql:300`
-  and never used `DROP PARTITION`." Keep the citation for provenance; lead with the finding.
+Section-level guidance lives in the template itself, including the local deviations from upstream
+MADR — all marked `LOCAL`, so the template can be re-synced against a future MADR release.
 
 Numbering is unresolved (see the backlog), so ADRs are named and cross-referenced by slug for now
 and get a number when the estate decision lands. The org's existing series — plain `ADR-001…005` in
