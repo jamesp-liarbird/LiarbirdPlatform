@@ -1,0 +1,18 @@
+# Claude Code — personal settings only; shared config under .claude/ is tracked
+.claude/settings.local.json
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Language-specific entries get added when the code lands.
