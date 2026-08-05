@@ -1,4 +1,4 @@
-# ADR-006: Control plane / tenant plane separation with deployment-shaped storage topology
+# Control plane / tenant plane separation with deployment-shaped storage topology
 
 **Status:** Proposed — moves to Accepted once the Phase 1 vertical slice confirms the two gates in §8.1
 **Date:** 2026-08-03
@@ -10,10 +10,6 @@ matrix (`:186-196`) and permission matrix (`:199-212`) in
 `AgileFramework/docs/architecture-m3-multi-tenant.md`, **on audit scope only** — those tables grant
 cross-tenant audit visibility to four of five audit-viewing roles and are no longer authoritative on
 that point (§2.7). They are not being edited; this ADR is the reference.
-
-> ADRs 001–005 live in the AgileFramework repo under `docs/adr/`. This one is numbered in the
-> same series to avoid collision, but lives here because its entire surface is LiarbirdServer,
-> the Helm charts, and the appliance.
 
 ---
 

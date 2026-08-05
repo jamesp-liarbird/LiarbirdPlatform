@@ -1,15 +1,11 @@
-# ADR-007: Time-keyed tables with bounded retention are unpartitioned by default
+# Time-keyed tables with bounded retention are unpartitioned by default
 
 **Status:** Proposed — moves to Accepted when the rebuild's schema lands with the §6 invariants under test
 **Date:** 2026-08-05
 **Deciders:** Platform / Engineering
 **Scope:** LiarbirdServer rebuild (`database/`, EagerBeaver `shared/db_models.py` and `shared/repositories/`), `appliance/liarbirdctl` (`src/retention/`)
-**Related:** ADR-006 (control plane / tenant plane separation — §2.2 storage topology, §2.13 fleet migrations)
+**Related:** [Control plane / tenant plane separation](control-plane-tenant-plane-separation.md) — §2.2 storage topology, §2.13 fleet migrations
 **Supersedes:** the implicit partitioning decision in `database/init/01-schema.sql:300`, carried unchanged from the initial schema commit and never recorded
-
-> ADRs 001–005 live in the AgileFramework repo under `docs/adr/`. This one is numbered in the same
-> series and lives here because its entire surface is the LiarbirdServer schema and the appliance
-> retention job.
 
 ---
 
@@ -73,10 +69,10 @@ policy that produced the split above.
 
 Two properties raise the stakes beyond the PoC's:
 
-**Storage topology multiplies the choice.** ADR-006 §2.2 makes SaaS database-per-tenant
+**Storage topology multiplies the choice.** The control-plane ADR §2.2 makes SaaS database-per-tenant
 (`tenant_<slug>` × N). Partitioning is therefore chosen once and instantiated per tenant: the PoC's
 layout is ~1,600 index relations *per tenant database*, and a schema change to a partitioned tenant
-table is a fleet operation (ADR-006 §2.13), not one migration.
+table is a fleet operation (control-plane ADR §2.13), not one migration.
 
 **The volume premise is unmeasured, and the mechanism that set it is being removed.** In the PoC,
 `alerts` receives decoy triggers plus a rareness tail: `main.py:507` admits an event only if
@@ -113,7 +109,7 @@ on day one and assertable in CI. Volume enters this ADR only as the §2.4 thresh
 | Table | Plane | Time column | Retention default | Partitioned |
 |---|---|---|---|---|
 | `alerts` | tenant | `timestamp` | 90 days (max 3650) | No |
-| `audit_logs` | one per lineage (ADR-006 §2.7) | `event_time` | 365 days | No |
+| `audit_logs` | one per lineage (control-plane ADR §2.7) | `event_time` | 365 days | No |
 | `usage_metrics` | control | `metric_date` (`DATE`) | 13 months | No — bounded by construction |
 | `forwarding_session_history` | tenant | `ended_at` | configurable | No |
 
@@ -156,7 +152,7 @@ table.
    unique constraint that omits its key, so a single-column PK forces a semantic change and an index
    rebuild at conversion time. Declaring the composite form up front makes conversion index-free.
 3. **No table FKs to a member on a single column.** Referencing tables carry
-   `(alert_id, alert_timestamp)` or a bare UUID (ADR-006 §2.10 already establishes bare UUIDs across
+   `(alert_id, alert_timestamp)` or a bare UUID (control-plane ADR §2.10 already establishes bare UUIDs across
    the plane boundary). Note the PoC's stated reason is imprecise: since PG12 a foreign key *may*
    reference a partitioned table — what it may not do is reference a unique constraint that omits the
    partition key.
@@ -200,7 +196,7 @@ Each clause rules out an alternative, which is why it is a decision rather than 
 
 ### 2.6 Retention executes inside the data plane, per tenant
 
-Under ADR-006 §2.2, retention is per-tenant-database work. The PoC's approach — `liarbirdctl`
+Under the control-plane ADR §2.2, retention is per-tenant-database work. The PoC's approach — `liarbirdctl`
 shelling out `kubectl exec … psql` against the CNPG primary — is appliance-shaped and does not
 generalise to N tenant databases. Retention in the rebuild is a scheduled job in the data plane,
 parameterised by the register, reading each tenant's configured periods.
@@ -261,7 +257,7 @@ that supersedes this one.
 - If the §2.2 volume assumption is wrong for a large tenant, that tenant hits a conversion project
   rather than having been partitioned from the start. §2.3 caps the cost at an `ATTACH` plus
   `pg_partman` adoption; §7 exists to catch it before a customer does.
-- Conversion is per-tenant fleet work (ADR-006 §2.13), so the trigger fires per tenant and the
+- Conversion is per-tenant fleet work (control-plane ADR §2.13), so the trigger fires per tenant and the
   response is not a single migration.
 - The migration runner wraps each file in one transaction holding an advisory lock
   (`run_migrations.py:308-321`), and `CREATE INDEX CONCURRENTLY` / `DETACH PARTITION CONCURRENTLY`
@@ -344,7 +340,8 @@ decision is then made on a number — which is the one thing §1.1 shows was nev
 
 ## 8. References
 
-- ADR-006 §2.2 (storage topology), §2.10 (cross-plane FKs), §2.13 (tenant-lineage migrations as fleet
+- [Control plane / tenant plane separation](control-plane-tenant-plane-separation.md) — §2.2 (storage
+  topology), §2.10 (cross-plane FKs), §2.13 (tenant-lineage migrations as fleet
   operations)
 - `database/init/01-schema.sql:209-210,300` — the partitioning decision and its only stated rationale
 - `appliance/liarbirdctl/src/retention/postgres.rs:58,162-166` — `DELETE`-based retention and its
