@@ -180,5 +180,7 @@ check.
 - [`../investigations/2026-08-05-architectural-style-assessment.md`](../investigations/2026-08-05-architectural-style-assessment.md)
   — the independent cost accounting the counts above corroborate
 - [`capabilities/`](capabilities/) — per-capability briefs
+- [`toolchain-baseline.md`](toolchain-baseline.md) — the interpreter, lock file and boundary tooling
+  these rules check against, stood up before the carry begins
 - [`dashboard-carry-over.md`](dashboard-carry-over.md) — the dashboard's carry, which these rules do
   not govern

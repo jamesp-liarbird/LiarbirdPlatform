@@ -24,8 +24,9 @@ when a row's status changes.
 | 9 | Time-keyed tables and retention | proposed | 8 |
 | 10 | Identity and tenancy model | open | — |
 | 11 | Dashboard scope | withdrawn | — |
-| 12 | Language and framework baseline | open | 1 |
+| 12 | Language and framework baseline | accepted | 1 (boundary tooling only) |
 | 13 | Validation during the documentation phase | open | — |
+| 14 | Migration mechanism | open | 9 |
 
 ---
 
@@ -203,10 +204,25 @@ dashboard's along module lines would leave one server answering two prefixes.
 
 ## 12. Language and framework baseline
 
-The stack is preserved identically: Python 3.11 / FastAPI / SQLAlchemy on the backend, Next.js and
-TypeScript in the dashboard. What remains for this row is recording it, and settling the boundary
-tooling that decision 1 leans on — import-linter and the checks behind its §4.2 assertions are a
-language-tooling matter, and rule 2 of the carry-over rules names a check that does not exist yet.
+Accepted — [`adr/language-and-framework-baseline.md`](adr/language-and-framework-baseline.md):
+Python 3.14 / FastAPI / SQLAlchemy 2.x async / Pydantic 2.x / pytest / import-linter, with majors
+decided in the ADR and everything below them left to the lock file. Accepted rather than proposed
+because the row has no empirical content a vertical slice could falsify; the interpreter number is
+the one checkable part, and §4.1 makes a failure select 3.13 under the same criterion rather than
+reopen the decision.
+
+The interpreter moves rather than carrying across, because it currently has no single value to carry:
+the lock file was compiled on 3.12, the images run 3.11, and nothing declares a requirement. Fixing
+that means choosing, and the criterion chooses the newest release still in bugfix support.
+
+The dashboard half of this row needs no decision. It is carried as-is under no structural conditions
+(decision 11, [`rebuild/dashboard-carry-over.md`](rebuild/dashboard-carry-over.md) §1), so its
+Next.js and TypeScript baseline follows from the carry rather than from a fork.
+
+Still blocked by decision 1 for the boundary-tooling clause only: the ADR names import-linter, and
+the contracts behind decision 1's §4.2 assertions 1 and 2 track that decision. Standing it up is
+build work — [`rebuild/toolchain-baseline.md`](rebuild/toolchain-baseline.md) §5 — and rule 2 of the
+carry-over rules is the rule currently resting on a check that does not exist.
 
 ## 13. Validation during the documentation phase
 
@@ -219,3 +235,22 @@ batch, or throwaway spikes are permitted during the phase specifically to close 
 Decisions 8 and 9 have empirical gates — role-level `search_path` behaviour under a pooler, whether
 the provider seam absorbs both deployment shapes — that a few hundred lines would settle far more
 cheaply than discovering the answer mid-build.
+
+## 14. Migration mechanism
+
+Schema changes are applied by hand-rolled SQL: numbered files in `database/migrations/` with paired
+`_down.sql` rollbacks, a home-made tracking table (`001_migration_tracking.sql`), a `run_migrations.py`
+runner and its own image (`database/Dockerfile.migrations`). Alembic is a *declared* dependency that
+nothing uses — `alembic>=1.12.0` at `EagerBeaver/src/requirements.in:47`, with no `alembic.ini` and no
+`env.py` anywhere — and it is carrying a CVE pin on transitive `mako` (ISSUE-354), so the unused
+framework has an active maintenance cost. Removing the dependency is the proof-of-concept repo's
+housekeeping.
+
+The fork is which mechanism owns the schema, and it is not a "preserve what exists" question in either
+direction: the incumbent is a runner someone wrote, and the alternative is a framework already paid
+for and never wired up.
+
+Blocked by decision 9, which determines what the mechanism has to be able to express. Time-keyed
+tables need partitions created ahead of use, and that decision also carries the unresolved partition
+roller — a migration mechanism that cannot create partitions leaves the roller as the only thing that
+can, which is how ISSUE-212 arose.

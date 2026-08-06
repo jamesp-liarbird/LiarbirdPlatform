@@ -460,9 +460,9 @@ trigger is what stops "later if we need to" from having no arrival condition:
 | D, one module | Lift the module to its own image and Deployment | Divergent workload or state affinity. `relay` is pre-identified: its WebSocket registry is in-process state keyed by agent, so a command for agent X must reach the replica holding X's socket |
 | D, generally | Per-capability data ownership | A capability acquires its own datastore, as AccountManagement has |
 
-**Gating.** Decisions 4–7 depend on this one and are constrained by §4.3. Decision 12 (language and
-framework baseline) is partly settled by §4.2: the enforcement surface assumes Python tooling that
-can express import contracts. Decision 8 supplies §1.10 and is not otherwise a dependency; its §1.1
+**Gating.** Decisions 4–7 depend on this one and are constrained by §4.3. Decision 12,
+[`language-and-framework-baseline.md`](language-and-framework-baseline.md), is partly settled by
+§4.2: the enforcement surface assumes Python tooling that can express import contracts. Decision 8 supplies §1.10 and is not otherwise a dependency; its §1.1
 attributes the duplicated bootstrap SQL to `EagerBeaver/` being a separate Docker build context,
 and §4.1 removes that cause.
 

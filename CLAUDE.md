@@ -50,6 +50,9 @@ examples to copy — new ADRs follow the template.
 derivative and living — they cite standing constraints, ADRs and investigations, and unlike
 investigations they are edited as the build proceeds.
 
+- [`docs/rebuild/toolchain-baseline.md`](docs/rebuild/toolchain-baseline.md) — standing up the
+  interpreter, lock file and boundary tooling, most of which happens before any code is carried.
+  Holds the dated dependency-readiness evidence.
 - [`docs/rebuild/backend-carry-over-rules.md`](docs/rebuild/backend-carry-over-rules.md) — the
   structural changes that apply to all backend code carried across. Each rule states the property,
   what carried code does that breaks it, and what enforces it.
@@ -102,3 +105,8 @@ that departs from one should say why, but departing is not a defect.
 House style for editing existing documents is in `../CLAUDE.md`. The rule that matters most here:
 write for the steady-state reader, not the transition. A future reader never saw the PoC and should
 not need to.
+
+Markdown here is not hard-wrapped. Write each paragraph and each bullet as one line and let the
+editor soft-wrap it; tables, code blocks and list structure keep their own line breaks. A file that
+is still wrapped gets reflowed as its own pass, rather than mixed into a content edit or left with
+new unwrapped paragraphs among wrapped ones — both stop the diff showing what actually changed.
