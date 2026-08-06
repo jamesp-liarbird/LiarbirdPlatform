@@ -43,6 +43,21 @@ The two ADRs carried over from the PoC repo predate this format. They keep their
 read backwards, as diffs against the running system. Treat them as content to build on, not as
 examples to copy — new ADRs follow the template.
 
+## Rebuild guidance
+
+`docs/rebuild/` guides the implementation effort rather than recording decisions. These documents are
+derivative and living — they cite standing constraints, ADRs and investigations, and unlike
+investigations they are edited as the build proceeds.
+
+- [`docs/rebuild/carry-over-rules.md`](docs/rebuild/carry-over-rules.md) — the structural changes that
+  apply to all code carried across. Each rule states the property, what carried code does that breaks
+  it, and what enforces it.
+- `docs/rebuild/capabilities/` — one brief per capability, covering the delta only: what holds, what
+  the wire contract fixes, what changes, and what is deliberately absent with its reason.
+
+Neither establishes a decision. If writing one surfaces a genuine fork it goes to an ADR and the
+document cites it, and every constraint carries its source so a stale one is detectable.
+
 ## Standing constraints
 
 Every ADR is tested against these. They are settled — a decision that breaks one needs to say so

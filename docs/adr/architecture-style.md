@@ -102,8 +102,8 @@ endpointmgr image copies `analysis/siem` plus a stub package marker
 
 **The data model is global.** All 48 ORM tables live in `shared/db_models.py` (39 of them),
 `shared/tenant/db_models.py` and `shared/forwarding_models.py`; no service owns a table, and none
-has a schema or database role of its own. `alerts` is written by `endpointmgr`, enriched by
-`analysis` and read by `responder`. One lineage of 92 migrations serves every unit through a shared
+has a schema or database role of its own. `alerts` is written by `endpointmgr` and then enriched in
+place by `analysis`. One lineage of 92 migrations serves every unit through a shared
 migration job, and every unit receives the same database, role, Redis logical database and Neo4j
 instance. **Shared mutable data is what makes independent deployment impossible irrespective of
 process count, and it is the property the service split never had.**

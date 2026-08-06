@@ -15,7 +15,7 @@ investigations cite these numbers and are not edited once written.
 | 1 | Architecture style — modular monolith vs alternatives | proposed | 8 (for §2.6, §3.7 only) |
 | 2 | ADR estate — numbering, prefix, foreign series | open | — |
 | 3 | Dropping Neo4j | withdrawn | — |
-| 4 | Where agent-submitted alerts go without `analysis` | open | 1 |
+| 4 | Where agent-submitted alerts go without `analysis` | withdrawn | — |
 | 5 | Command/response lifecycle without `responder` | open | 1 |
 | 6 | SIEM forwarding ownership | open | 1 |
 | 7 | Forwarding-relay reference in agent manifests | open | 1, 5 |
@@ -85,19 +85,23 @@ whenever the graph is empty.
 
 Evidence: [`investigations/2026-08-06-neo4j-scope-exclusion.md`](investigations/2026-08-06-neo4j-scope-exclusion.md).
 Removing the client from the PoC is that repo's housekeeping. What the graph's correlation was doing,
-and whether anything replaces it, is decision 4's.
+and whether anything replaces it, is settled in
+[`rebuild/capabilities/alert-ingestion.md`](rebuild/capabilities/alert-ingestion.md) (§4).
 
 ## 4. Where agent-submitted alerts go without `analysis`
 
-Agents `POST` to `/api/v1/endpointmgr/agent/alerts`, and endpointmgr forwards to the Analysis
-service over `ANALYSIS_API_HOST`/`PORT` from `alert_forwarder.py`, `alert_processor.py` and
-`agent_registration.py`. With Analysis out of scope, alert ingestion, normalisation and storage
-need an owner. The agent-facing path cannot change (standing constraint), so this is a question
-about what sits behind it.
+Withdrawn — they stay where they already are. Alert ingestion, storage, the read surface and
+`event_key` deduplication are all endpointmgr's today, and the dropped service enriched a row the
+ingest path had already written. There is no seam to place and no owner to find, so what remains is
+implementation guidance rather than a decision.
 
-Correlation comes with it. Alert enrichment, entity extraction and MITRE mapping were modelled in the
-Neo4j graph the dropped services owned (§3), so whether any of that is rebuilt, expressed
-relationally, or dropped is settled here rather than inherited.
+Guidance: [`rebuild/capabilities/alert-ingestion.md`](rebuild/capabilities/alert-ingestion.md) — what
+the alert record stops carrying and why, the ingest path's acknowledge-without-persist defect, and
+the handoffs to decisions 5, 6 and 9. Correlation is settled there too: the graph-modelled kind
+leaves with the graph (§3), and deduplication never left.
+
+Enrichment's eventual return is not this row's business either. It arrives as a module under decision
+1, with a schema change of its own, rather than by writing columns reserved in advance.
 
 ## 5. Command/response lifecycle without `responder`
 
