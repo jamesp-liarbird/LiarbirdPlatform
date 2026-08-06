@@ -17,6 +17,14 @@ copy code from it into this repo.
 - `ISSUE-NNN` and `story-mN-x.y` are AgileFramework's tracker.
 - Line numbers are provenance, not durable references. Expect them to rot.
 
+## Investigations
+
+`docs/investigations/` holds dated evidence documents that ADRs cite — assessments and audits of the
+proof-of-concept, named `YYYY-MM-DD-topic.md`. They are records, not decisions: kept verbatim once
+written, never edited to match a later decision, and superseded by a new dated document rather than
+revised. An ADR cites primary artifacts for its own claims so that its argument stands without
+them.
+
 ## Architecture decision records
 
 Live in `docs/adr/` and follow [MADR 4.0](https://github.com/adr/madr). Start one by copying
@@ -47,6 +55,22 @@ explicitly and argue for it.
 - **Scope is endpointmgr first.** The `analysis`, `forwardingrelay` and `responder` services are not
   being brought across. Where endpointmgr reaches them today, that seam is a decision to be made,
   not a dependency to be recreated.
+
+## Decision principles
+
+How to choose, where the constraints above leave room. Unlike them, these are heuristics — an ADR
+that departs from one should say why, but departing is not a defect.
+
+- **The simplest thing that isn't a corner.** Take the least complex option that leaves a more
+  complex one reachable, and name what would trigger the upgrade. Without a trigger, "later if we
+  need to" has no arrival condition.
+- **It applies to the design, not the guardrails.** Deferring structure is cheap. Deferring the
+  checks that keep structure honest is what makes the upgrade expensive, because what accumulates
+  in the meantime is undetected drift, not complexity.
+- **Defer a boundary only if moving it later stays local.** What makes relocation expensive is the
+  number of places that restate the boundary's position — not whether it lives in code, the schema
+  or a wire format. One decided at a single chokepoint is deferrable; one restated at every call
+  site is cheap now and expensive at any later point. Centralising the decision buys deferability.
 
 ## Writing
 
