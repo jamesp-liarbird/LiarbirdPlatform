@@ -145,7 +145,7 @@ Second, several ADR sections get *simpler* under two axes: §2.5 becomes "the se
 "pg_dump", "-U", "liarbird", "-d", "liarbird", "-Fc"
 ```
 
-A single logical dump of a single database. Under database-per-tenant this captures the control plane and **silently omits every tenant** — §3.3's `pg_dump` objection, present in code rather than in argument. Cluster-level backup is the answer, and the routine is being opened regardless, since it also dumps Neo4j (decision 3).
+A single logical dump of a single database. Under database-per-tenant this captures the control plane and **silently omits every tenant** — §3.3's `pg_dump` objection, present in code rather than in argument. Cluster-level backup is the answer, and the routine is not single-purpose: the same function dumps Neo4j immediately afterwards via `dump_neo4j` (`:1199-1202`), so the graph's fate and the tenant-coverage defect land in one place.
 
 ### 6.2 External-database mode and multi-tenancy are mutually exclusive
 
@@ -153,7 +153,7 @@ Database-per-tenant requires `CREATEDB` on a customer-managed instance, which §
 
 ## 7. Questions this leaves open
 
-Neither is settled here; both belong on the decision backlog.
+Neither is settled here. Both are open at the time of writing.
 
 1. **Is a multi-tenant self-hosted appliance in scope for the rebuild?** A standing-constraint question before an ADR question, and cheap to answer. A "no" must be stated in the constraint rather than left implicit in an adjective, and it cancels the appliance half of Epic M4-1 — a commercial call, not an architectural one.
 2. **If yes, is in-place single→multi upgrade supported?** Multi-tenancy's existence does not touch the single-tenant topology; a licence-driven upgrade path does. §2.9's plane assignment is identical across topologies, so the migration is a schema dump into a new database rather than a data-model change — but only if control-plane and tenant-plane objects keep the same schema names regardless of database packaging. §2.2 currently specifies *"all objects in `public`"* for SaaS tenant databases and leaves the SaaS control database's internal schema unstated.
