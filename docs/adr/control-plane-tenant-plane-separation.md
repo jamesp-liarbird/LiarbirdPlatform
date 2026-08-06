@@ -195,7 +195,10 @@ exposes a settable `provider` property.
 
 The seam also bounds future divergence: a tier requiring stronger placement — instance- or
 project-per-tenant, as the §3.2 compliance pathway may eventually demand — is a third provider
-implementation, not a change to this decision.
+implementation, not a change to this decision. The trigger is the first tenant contractually
+requiring data residency outside `australia-southeast1`. At that point control-plane placement and
+the Zitadel instance need deciding as well, since §2.9 holds `dashboard_users`, `user_sessions`,
+`user_permission_overrides` and `user_terms_acceptance` in the single control plane.
 
 Policy divergence that cannot sit behind the storage seam gets one explicit home:
 
@@ -561,7 +564,9 @@ SOC 2."*
 1. We sell endpoint deception **to security teams**; isolation claims are scrutinised in every deal,
    and "enforced by the connection" outranks "enforced by row policy" in a security review.
 2. `docs/` in AgileFramework includes a **US government compliance pathway**, where data residency and
-   physical isolation are effectively table stakes.
+   physical isolation are effectively table stakes. Silo keeps that reachable — a tenant's data already
+   sits in its own database, so regional placement is a provider change (§2.4) rather than a schema
+   migration. This covers the tenant plane; control-plane and identity residency is separate (§2.9).
 3. The **MSSP tenant-group** model means tenants-within-tenants, compounding blast radius.
 4. ADR-M3-003 already decided silo and `ContainerDatabaseProvider` is built; the marginal cost of
    completing it is lower than the cost of unwinding it.

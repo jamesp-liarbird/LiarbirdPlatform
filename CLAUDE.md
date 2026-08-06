@@ -56,6 +56,9 @@ explicitly and argue for it.
 - **The agent wire contract.** Deployed agents already speak ~25 `/api/v1/endpointmgr/…` paths
   (register, bootstrap, heartbeat, refresh, alerts, responses, manifest, updates, uninstall). The
   server's API surface is constrained by what is already in the field.
+- **Data stays in Australia/New Zealand.** Customer data at rest and in backups is held in AU/NZ
+  regions. Serving a tenant under another jurisdiction's residency requirement is an open question,
+  not a configuration change.
 - **Scope is endpointmgr first.** The `analysis`, `forwardingrelay` and `responder` services are not
   being brought across. Where endpointmgr reaches them today, that seam is a decision to be made,
   not a dependency to be recreated.

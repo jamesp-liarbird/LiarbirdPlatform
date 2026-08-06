@@ -37,6 +37,14 @@ So the question is not whether to build it. It is whether the rebuild carries it
 changes what "self-hosted" is allowed to assume. Evidence, and the decisions that depend on it, are
 in [`investigations/2026-08-06-self-hosted-multi-tenancy.md`](investigations/2026-08-06-self-hosted-multi-tenancy.md).
 
+## Residency
+
+Customer data is held in Australia/New Zealand. Self-hosted is the only shape that satisfies a
+residency requirement elsewhere, because it places the whole stack — tenant data, control plane and
+identity — in the customer's own jurisdiction. On SaaS, per-tenant storage placement reaches the
+tenant plane but not the control plane, so a tenant under another jurisdiction's requirement is an
+open question rather than a region setting.
+
 ## Storage mode
 
 Independent of the matrix above, a deployment's database is either containerised or an external
