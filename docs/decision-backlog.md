@@ -83,20 +83,23 @@ about what sits behind it.
 
 ## 5. Command/response lifecycle without `responder`
 
-The standing constraint fixes the shape: responses execute on the endpoint, and the server holds
-configuration and a queue without doing any responding. Agents call `agent/responses` and
-`response/command/{id}/acknowledge`, and commands ride the heartbeat, so the server side is storage
-plus an HTTP handler rather than an orchestrator. `response.py`, `response_queue.py` and
-`shared/services/response_queue.py` split along that line — the queue and the agent-facing paths
-survive, response *selection* does not. Ramping runs on the agent and continues while disconnected,
-so server-side response state is a report rather than a control surface.
+Responses execute on the endpoint. Agents call `agent/responses` and
+`response/command/{id}/acknowledge`, commands ride the heartbeat, and ramping runs on the agent —
+continuing while disconnected, and randomising intensity and timing per execution so the response is
+not fingerprintable as a security control. Server-side response state is therefore a report rather
+than a control surface. `response.py`, `response_queue.py` and `shared/services/response_queue.py`
+split along that line: the queue, HITL gate, expiry sweep and agent-facing paths are endpointmgr's,
+response *selection* is the responder's.
 
-What remains open is **HITL**. `AgileFramework/docs/technical-faq.md` commits to operator approval
-before any response executes — a per-detection decision taken after the detection, which
-pre-authorised configuration cannot express. Keeping it means the server retains response state, a
-dashboard approval surface, and `pending_response_expiry` as queue housekeeping; dropping it retires
-a customer-facing promise. It is a Product call, and it decides whether `pending_responses` carries
-working state or only a record.
+The producer goes with selection. `queue_response()` is called only from
+`responder/services/hitl_workflow.py` and `responder/services/langgraph_agent.py`, and no route
+creates a pending response, so an operator cannot initiate one. What remains open is what replaces
+it. Operator-driven approval is new API surface rather than a surviving seam, and keeps
+`pending_responses` as working state plus a dashboard surface; endpoint-autonomous responses take
+their envelope from the manifest (decision 7) and leave the queue with no input — kept anyway, it
+ships approve/reject/cancel over a permanently empty table. Response-mode configuration
+(`detection_profile_response_mode`, `response_mode_critical_immediate`) selects the path and stays
+endpointmgr's either way.
 
 ## 6. SIEM forwarding ownership
 
@@ -109,6 +112,10 @@ comes across as its own module, or the settings CRUD comes across without a forw
 `manifests.py` hands agents a `FORWARDING_RELAY_URL`. With `forwardingrelay` out of scope, either
 the manifest field goes (an agent-visible change, so check it against the wire contract) or
 something answers on that URL.
+
+The manifest also carries `response_config` (wire name `r_cfg`, holding `permitted_actions`), which is
+the agent's response envelope. If decision 5 lands on endpoint-autonomous responses, that field is
+their only control surface, so manifest work has to keep it.
 
 ## 8. Control plane / tenant plane separation
 
