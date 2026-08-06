@@ -19,9 +19,10 @@ decision backlog in `docs/decision-backlog.md` is cleared.
 ## Investigations
 
 `docs/investigations/` holds dated evidence documents that ADRs cite — assessments and audits of the
-proof-of-concept, named `YYYY-MM-DD-topic.md`. They are records, not decisions: never edited to
-match a later decision. An ADR cites primary artifacts for its own claims so that its argument
-stands without them.
+proof-of-concept, named `YYYY-MM-DD-topic.md`. They are records, not decisions. A finding later
+found to be wrong is corrected in place under a dated note saying what changed and what surfaced it,
+so the document stays usable as evidence rather than accruing known-false claims. An ADR cites
+primary artifacts for its own claims so that its argument stands without them.
 
 ## Architecture decision records
 

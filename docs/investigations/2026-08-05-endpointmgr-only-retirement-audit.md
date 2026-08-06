@@ -322,20 +322,26 @@ Reachable by URL:
 
 **`useGraphUpdates.ts` / `/api/graph/events`.** A false alarm worth recording: that SSE route is a self-contained 112-line local stub with no upstream fetch, so it will not error — it simply has nothing to announce. Remove it with the Command Centre.
 
+**DISRUPT — `/countermeasures`.** EndpointMgr-backed with no dead upstream, and renders the pending-response queue: the list, the approve/reject dialogs and the ramp stages, plus an executed-response history that reads the same table (`src/app/countermeasures/page.tsx:123-124,225-231`). Retiring Responder removes `queue_response()`, the table's only writer (§2.2 has no equivalent HTTP seam because there is none — the coupling is a shared table, not a call), so the page renders empty indefinitely. `/response-queue` is a redirect into it at `?tab=pending` and degrades with it.
+
+Whether an operator-facing initiation path replaces the queue is a product decision, not a retirement task. The dashboard work is the same either way: both halves of the page read approval fields (`reviewed_by`, `response_status`), so repointing them at `commands` is a rewrite rather than a URL change.
+
+> **Correction, 2026-08-06.** §5.5 originally listed `/countermeasures` and `/response-queue` as unaffected. That was right about the API surface and wrong about the page: the signals in §Method cover imports, HTTP calls and deployment wiring, and this coupling is a table one service writes and another reads. Surfaced while scoping the response lifecycle for the rebuild; the same class of defect as the enrichment indicator in §6.2.
+
 ### 5.5 Unaffected
 
-- **DISRUPT** `/countermeasures`, Capabilities `/countermeasures/capabilities`, `/countermeasures/anti-agent`
+- **DISRUPT** Capabilities `/countermeasures/capabilities`, `/countermeasures/anti-agent` — the parent `/countermeasures` degrades, see §5.4
 - Decoys `/detections`, Deployment Limits `/detections/quotas` — `services/detections.ts:66` → `/api/v1/endpointmgr`
 - **DEPLOY** `/endpoints`, `/endpoints/policies`, Agent Groups, Agent Updates, Agent Defaults
 - **PERFORMANCE** `/performance` — `services/performance.ts:96` → `/api/v1/endpointmgr/performance`
 - All 10 **Appliance** items (Monitoring, TLS Certificates, Network, Backups, Updates, Data Management, Cluster, Support, SSO, Factory Reset) — liarbirdctl
 - All 4 **Settings** items (User Management, License, Privacy, Audit Logs)
 - **Admin → System Settings** `/system/settings` and children (`audit-logs`, `response-mode`, `tag-patterns`) — `services/endpointmgr.ts:456`
-- login, logout, onboarding, terms, legal, help/docs, admin identity-providers, `/agents/[id]/{capabilities,manifest}`, `/agents/deploy`, `/response-queue`
+- login, logout, onboarding, terms, legal, help/docs, admin identity-providers, `/agents/[id]/{capabilities,manifest}`, `/agents/deploy`
 
 ### 5.6 Net effect on the nav
 
-- **Main** keeps DETECT (degraded), DISRUPT, DEPLOY and PERFORMANCE, but loses its landing page, the Integrations child (becomes SIEM-only elsewhere), Data Sanitisation, and DISRUPT's Forwarding child.
+- **Main** keeps DETECT (degraded), DISRUPT (degraded), DEPLOY and PERFORMANCE, but loses its landing page, the Integrations child (becomes SIEM-only elsewhere), Data Sanitisation, and DISRUPT's Forwarding child.
 - **Appliance** and **Settings**: untouched.
 - **Admin** loses 5 of 6 items, leaving only System Settings — worth folding into Settings rather than keeping a one-item group.
 

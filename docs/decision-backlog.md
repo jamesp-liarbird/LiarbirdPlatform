@@ -16,7 +16,7 @@ investigations cite these numbers and are not edited once written.
 | 2 | ADR estate — numbering, prefix, foreign series | open | — |
 | 3 | Dropping Neo4j | withdrawn | — |
 | 4 | Where agent-submitted alerts go without `analysis` | withdrawn | — |
-| 5 | Command/response lifecycle without `responder` | open | 1 |
+| 5 | Command/response lifecycle without `responder` | proposed | 1 |
 | 6 | SIEM forwarding ownership | open | 1 |
 | 7 | Forwarding-relay reference in agent manifests | open | 1, 5 |
 | 8 | Control plane / tenant plane separation | proposed | — |
@@ -105,23 +105,36 @@ Enrichment's eventual return is not this row's business either. It arrives as a 
 
 ## 5. Command/response lifecycle without `responder`
 
-Responses execute on the endpoint. Agents call `agent/responses` and
-`response/command/{id}/acknowledge`, commands ride the heartbeat, and ramping runs on the agent —
-continuing while disconnected, and randomising intensity and timing per execution so the response is
-not fingerprintable as a security control. Server-side response state is therefore a report rather
-than a control surface. `response.py`, `response_queue.py` and `shared/services/response_queue.py`
-split along that line: the queue, HITL gate, expiry sweep and agent-facing paths are endpointmgr's,
-response *selection* is the responder's.
+Responses execute on the endpoint by one of two paths, selected by the manifest's per-asset response
+mode. Server-commanded ramping follows the schedule in the command, or a fixed default ladder when
+none is supplied. Autonomous response is the randomised one, drawing delay, duration and intensity
+per execution from bounds compiled into the agent (`LiarbirdAgent/src/response/immediate.rs`) so the
+response is not fingerprintable as a security control. `alert_only` suppresses both; `hitl`
+suppresses both and waits for a server command.
+
+Agents call `agent/responses` and `response/command/{id}/acknowledge`, commands ride the heartbeat,
+and execution continues while disconnected — progress reports queue and flush on reconnect.
+Server-side response state is therefore a lagging report rather than a control surface.
+`response.py`, `response_queue.py` and `shared/services/response_queue.py` split along that line: the
+queue, HITL gate, expiry sweep and agent-facing paths are endpointmgr's, response *selection* is the
+responder's.
 
 The producer goes with selection. `queue_response()` is called only from
 `responder/services/hitl_workflow.py` and `responder/services/langgraph_agent.py`, and no route
-creates a pending response, so an operator cannot initiate one. What remains open is what replaces
-it. Operator-driven approval is new API surface rather than a surviving seam, and keeps
-`pending_responses` as working state plus a dashboard surface; endpoint-autonomous responses take
-their envelope from the manifest (decision 7) and leave the queue with no input — kept anyway, it
-ships approve/reject/cancel over a permanently empty table. Response-mode configuration
-(`detection_profile_response_mode`, `response_mode_critical_immediate`) selects the path and stays
-endpointmgr's either way.
+creates a pending response, so an operator cannot initiate one. That queue is also the whole
+operator surface — the disrupt page is its list, approvals and history — so what is at stake is the
+capability, not a table.
+
+Proposed — [`adr/operator-initiated-endpoint-responses.md`](adr/operator-initiated-endpoint-responses.md):
+an operator dispatches against the existing command route, the approval queue does not come across,
+and `hitl` means an operator decides. Promotes when the disrupt capability ships with its §4.3
+assertions green.
+
+Deciding nothing is not neutral, which is what settles it: with the mode assigned per asset,
+`immediate` assets keep responding autonomously while `hitl` assets respond never and record
+nothing. Response-mode configuration (`detection_profile_response_mode`,
+`response_mode_critical_immediate`) selects between the paths and stays endpointmgr's under any
+outcome.
 
 ## 6. SIEM forwarding ownership
 
@@ -137,7 +150,13 @@ something answers on that URL.
 
 The manifest also carries `response_config` (wire name `r_cfg`, holding `permitted_actions`), which is
 the agent's response envelope. If decision 5 lands on endpoint-autonomous responses, that field is
-their only control surface, so manifest work has to keep it.
+their only control surface, so manifest work has to keep it — and it currently fails open, since
+`LiarbirdAgent/src/response/immediate.rs` treats an absent action key as permitted.
+
+The envelope has a second half the server never sends. `LiarbirdAgent/src/agent_config.rs` defines
+`ir_cfg` for the bounds the autonomous path randomises within — delay, duration, intensity and
+ramp-up — and `manifests.py` emits no such field, so those responses run on compiled-in defaults.
+Whether the server should tune them follows decision 5.
 
 ## 8. Control plane / tenant plane separation
 
