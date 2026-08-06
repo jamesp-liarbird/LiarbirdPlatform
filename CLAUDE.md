@@ -51,6 +51,8 @@ explicitly and argue for it.
 
 - **Two deployment shapes.** SaaS multi-tenant with isolated per-tenant databases, and single-tenant
   self-hosted. Both are first-class; neither is a degraded mode of the other.
+  [`docs/deployment-shapes.md`](docs/deployment-shapes.md) records the full set of shapes and which
+  are settled.
 - **The agent wire contract.** Deployed agents already speak ~25 `/api/v1/endpointmgr/…` paths
   (register, bootstrap, heartbeat, refresh, alerts, responses, manifest, updates, uninstall). The
   server's API surface is constrained by what is already in the field.
