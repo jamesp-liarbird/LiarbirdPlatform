@@ -63,10 +63,11 @@ integrations, audit, settings, uninstall, usage metering, terms acceptance — a
 2,656 lines. Splitting a system into services says nothing about whether the parts have internal
 structure.
 
-**The boundaries follow pipeline stages, not capabilities.** Ingest → analyse → respond means all
-four services operate on the same three entities, `agents`, `alerts` and `commands`. Cutting a
+**The boundaries follow pipeline stages, not bounded contexts.** Ingest → analyse → respond means
+all four services operate on the same three entities, `agents`, `alerts` and `commands`. Cutting a
 pipeline into processes runs the cut lines through the data every stage shares, which is the
-mechanism that produced §1.6. A capability split would have given each unit tables it owned.
+mechanism that produced §1.6. A split along bounded contexts would have given each unit tables it
+owned.
 
 ### 1.5 Nothing enforces the boundaries
 
@@ -322,8 +323,9 @@ migration job — against six today.
 
 ### 4.2 Confirmation
 
-Each assertion is a check that can fail. Items 1–5 are CI tests; item 6 is a CI configuration
-change.
+Each assertion is a fitness function — an automated, objective check on an architectural
+characteristic, failing the build rather than relying on review. Items 1–5 are CI tests; item 6 is a
+CI configuration change.
 
 1. **`platform` imports no feature module.** An import-linter contract, run in CI. This is the
    check that would have failed on `shared/middleware/license_gate.py:118` (§1.5).
@@ -452,6 +454,19 @@ framework baseline) is partly settled by §4.2: the enforcement surface assumes 
 can express import contracts. Decision 8 supplies §1.10 and is not otherwise a dependency; its §1.1
 attributes the duplicated bootstrap SQL to `EagerBeaver/` being a separate Docker build context,
 and §4.1 removes that cause.
+
+**Prior art the terms come from.** Three of this decision's mechanisms have standard names, used
+above rather than reinvented: §4.2's assertions are *fitness functions* (Ford, Parsons and Kua,
+*Building Evolutionary Architectures*); §1.4's diagnosis is a split along pipeline stages where
+bounded contexts were needed (Evans, *Domain-Driven Design*); and §4's two process roles are the
+process formation of *twelve-factor* factor VIII, with §4.3's stateless-`web` constraint following
+from factor VI. Factors I and II also name §1.5's and §1.6's findings — a shared library across four
+apps, and dependencies neither declared nor isolated.
+
+The cloud vendors' frameworks are organised by quality attribute rather than by decomposition style
+and do not speak to this choice. Their multi-tenancy guidance does, and is already cited where it
+applies:
+[`control-plane-tenant-plane-separation.md`](control-plane-tenant-plane-separation.md) §2.1.
 
 **Provenance.** §1.4–1.8's cost accounting is corroborated by an independent assessment against
 proof-of-concept commit `14d9e9fb`, held at
