@@ -20,10 +20,9 @@ copy code from it into this repo.
 ## Investigations
 
 `docs/investigations/` holds dated evidence documents that ADRs cite — assessments and audits of the
-proof-of-concept, named `YYYY-MM-DD-topic.md`. They are records, not decisions: kept verbatim once
-written, never edited to match a later decision, and superseded by a new dated document rather than
-revised. An ADR cites primary artifacts for its own claims so that its argument stands without
-them.
+proof-of-concept, named `YYYY-MM-DD-topic.md`. They are records, not decisions: never edited to
+match a later decision. An ADR cites primary artifacts for its own claims so that its argument
+stands without them.
 
 ## Architecture decision records
 
