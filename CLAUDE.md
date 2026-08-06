@@ -50,13 +50,15 @@ examples to copy — new ADRs follow the template.
 derivative and living — they cite standing constraints, ADRs and investigations, and unlike
 investigations they are edited as the build proceeds.
 
-- [`docs/rebuild/carry-over-rules.md`](docs/rebuild/carry-over-rules.md) — the structural changes that
-  apply to all code carried across. Each rule states the property, what carried code does that breaks
-  it, and what enforces it.
+- [`docs/rebuild/backend-carry-over-rules.md`](docs/rebuild/backend-carry-over-rules.md) — the
+  structural changes that apply to all backend code carried across. Each rule states the property,
+  what carried code does that breaks it, and what enforces it.
+- [`docs/rebuild/dashboard-carry-over.md`](docs/rebuild/dashboard-carry-over.md) — what is rebuilt,
+  removed and copied as-is in the dashboard, which is carried across rather than rebuilt.
 - `docs/rebuild/capabilities/` — one brief per capability, covering the delta only: what holds, what
   the wire contract fixes, what changes, and what is deliberately absent with its reason.
 
-Neither establishes a decision. If writing one surfaces a genuine fork it goes to an ADR and the
+None of them establishes a decision. If writing one surfaces a genuine fork it goes to an ADR and the
 document cites it, and every constraint carries its source so a stale one is detectable.
 
 ## Standing constraints

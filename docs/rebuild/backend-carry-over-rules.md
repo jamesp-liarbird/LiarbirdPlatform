@@ -1,16 +1,22 @@
-# Carry-over rules
+# Backend carry-over rules
 
-What has to change in code carried across from the proof-of-concept. Each rule is a structural
-property the rebuild requires and the proof-of-concept does not have, so a file carried across
-unchanged breaks it — usually silently, because the property is one nothing currently checks.
+What has to change in backend code carried across from the proof-of-concept. Each rule is a
+structural property the rebuild requires and the proof-of-concept does not have, so a file carried
+across unchanged breaks it — usually silently, because the property is one nothing currently checks.
+
+The dashboard is carried across under no structural conditions at all, deliberately
+([`dashboard-carry-over.md`](dashboard-carry-over.md) §1). Nothing here applies to it.
 
 These are not suggestions about style. Most of them fail a build: they restate the fitness functions
 in [`../adr/architecture-style.md`](../adr/architecture-style.md) §4.2 pointed at the code someone is
 about to paste. Where no check exists, the rule says so rather than borrowing authority it does not
 have.
 
+The five modules these rules place code into, and the plane each sits in, are the table in
+[`../adr/architecture-style.md`](../adr/architecture-style.md) §4.
+
 Capability-specific guidance — what a particular capability must do, reproduce, or avoid — lives in
-[`capabilities/`](capabilities/). This document is what applies to all of it.
+[`capabilities/`](capabilities/). This document is what applies across all of them.
 
 ## How a rule reads
 
@@ -54,10 +60,10 @@ still builds its own filtered query alongside it (`endpointmgr/services/alert_pr
 (§7). Where a repository lacks the method you need, add the method — inlining the query is how the
 layer eroded the first time.
 
-**Enforced by** nothing today. §4.2 has no assertion for it, and this is the rule most likely to
-decay quietly, since every individual violation is a two-line convenience. A mechanical check is
-available — assert that `select(`, `update(` and `delete(` appear only in repository modules — and
-should be added when the layer lands.
+**Enforced by** [`../adr/architecture-style.md`](../adr/architecture-style.md) §4.2 assertion 7,
+which asserts that `select(`, `update(` and `delete(` appear nowhere outside a module's repository
+package. Worth knowing why it exists: every individual violation is a two-line convenience, which is
+how the layer eroded the first time.
 
 ## 3. A module reaches another module only through its public surface
 
@@ -128,9 +134,11 @@ and it is the least navigable component in the estate.
 ([`../adr/architecture-style.md`](../adr/architecture-style.md) §4.3), so group on the way in, where
 it is free, rather than after 40 files have arrived.
 
-**Enforced by** nothing directly. Assertions 2, 3 and 4 constrain where models, connections and
-imports may appear, which bounds the seams between modules but says nothing about grouping within
-one. This rule is a review obligation.
+**Enforced by** [`../adr/architecture-style.md`](../adr/architecture-style.md) §4.2 assertion 8,
+which fails on a source file outside a declared module root. That catches the flat tree and nothing
+more — whether a module's internal grouping is sensible is not expressible as a check, so the second
+half of this rule is a review obligation. A file-length ceiling in the linter is the cheap partial
+proxy.
 
 ## 7. The disposition of `shared`
 
@@ -159,8 +167,9 @@ This document is written against
 when a Phase 1 vertical slice runs with its §4.2 assertions green, and if an assertion changes on the
 way through, the rule resting on it changes with it.
 
-Rules 2 and 6 have no assertion behind them. Rule 2 names the check that should exist; rule 6 is a
-review obligation and stays one.
+Every rule here has an assertion behind it except the second half of rule 6 — whether a module's
+internal grouping is sensible — which stays a review obligation because it is not expressible as a
+check.
 
 ## 9. Related
 
@@ -171,3 +180,5 @@ review obligation and stays one.
 - [`../investigations/2026-08-05-architectural-style-assessment.md`](../investigations/2026-08-05-architectural-style-assessment.md)
   — the independent cost accounting the counts above corroborate
 - [`capabilities/`](capabilities/) — per-capability briefs
+- [`dashboard-carry-over.md`](dashboard-carry-over.md) — the dashboard's carry, which these rules do
+  not govern

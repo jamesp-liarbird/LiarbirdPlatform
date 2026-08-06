@@ -324,8 +324,8 @@ migration job — against six today.
 ### 4.2 Confirmation
 
 Each assertion is a fitness function — an automated, objective check on an architectural
-characteristic, failing the build rather than relying on review. Items 1–5 are CI tests; item 6 is a
-CI configuration change.
+characteristic, failing the build rather than relying on review. Items 1–5, 7 and 8 are CI tests;
+item 6 is a CI configuration change.
 
 1. **`platform` imports no feature module.** An import-linter contract, run in CI. This is the
    check that would have failed on `shared/middleware/license_gate.py:118` (§1.5).
@@ -344,10 +344,21 @@ CI configuration change.
    the module contract, and it is currently the part CI does not exercise — `pytest -m "not
    integration and not neo4j and not slow"` at ~51% unit coverage. Requires Postgres and Redis
    service containers.
+7. **Queries are constructed only in repository modules.** A test asserting that `select(`,
+   `update(` and `delete(` appear nowhere outside a module's repository package. The repository
+   layer being available but not required is what let 81 direct `select()` calls accumulate in
+   `endpointmgr`'s API modules alone (§1.9).
+8. **No source file sits outside a declared module root.** A test asserting every source file
+   resolves under `platform` or one of the feature modules. It fails on code arriving as a flat
+   tree, which is §1.4's failure mode.
 
-There is no check for cross-module joins at the SQL level; assertions 3 and 4 constrain where
-models and connections may be referenced, which is the enforceable surface. A query joining two
-modules' tables from a module that owns both models' imports would pass, and is left to review.
+Two things these do not reach. There is no check for cross-module joins at the SQL level; assertions
+3 and 4 constrain where models and connections may be referenced, which is the enforceable surface. A
+query joining two modules' tables from a module that owns both models' imports would pass, and is
+left to review. And whether a module's *internal* grouping is sensible is not expressible as a check
+— assertion 8 catches the flat tree, not a badly divided one. A file-length ceiling would have caught
+`api/agent_registration.py` at 2,656 lines, but that is linter configuration rather than an
+architectural characteristic.
 
 ### 4.3 Constraints Imposed
 
@@ -437,8 +448,8 @@ modules' tables from a module that owns both models' imports would pass, and is 
 ## 6. More Information
 
 **Promotion trigger.** This ADR is Proposed. It promotes when a Phase 1 vertical slice runs with
-§4.2's assertions 1–5 green and assertion 6's service containers in CI. Decision 13 governs whether
-that slice happens during the documentation phase.
+§4.2's assertions 1–5, 7 and 8 green and assertion 6's service containers in CI. Decision 13 governs
+whether that slice happens during the documentation phase.
 
 **Upgrade paths and their triggers.** Each rejected option remains reachable, and naming the
 trigger is what stops "later if we need to" from having no arrival condition:

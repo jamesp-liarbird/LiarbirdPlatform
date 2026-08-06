@@ -8,7 +8,8 @@ awaiting its promotion trigger · `accepted` — closed · `deferred` — delibe
 reason and a revisit trigger · `withdrawn` — not a decision; settled elsewhere, with a pointer.
 
 Numbers are stable. A withdrawn row keeps its number rather than being removed, because
-investigations cite these numbers and are not edited once written.
+investigations, ADRs and capability briefs cite them, and a citation should not have to be chased
+when a row's status changes.
 
 | # | Decision | Status | Blocked by |
 |---|---|---|---|
@@ -22,7 +23,7 @@ investigations cite these numbers and are not edited once written.
 | 8 | Control plane / tenant plane separation | proposed | — |
 | 9 | Time-keyed tables and retention | proposed | 8 |
 | 10 | Identity and tenancy model | open | — |
-| 11 | Dashboard scope | open | — |
+| 11 | Dashboard scope | withdrawn | — |
 | 12 | Language and framework baseline | open | 1 |
 | 13 | Validation during the documentation phase | open | — |
 
@@ -128,7 +129,8 @@ capability, not a table.
 Proposed — [`adr/operator-initiated-endpoint-responses.md`](adr/operator-initiated-endpoint-responses.md):
 an operator dispatches against the existing command route, the approval queue does not come across,
 and `hitl` means an operator decides. Promotes when the disrupt capability ships with its §4.3
-assertions green.
+assertions green. Implementation guidance:
+[`rebuild/capabilities/response-lifecycle.md`](rebuild/capabilities/response-lifecycle.md).
 
 Deciding nothing is not neutral, which is what settles it: with the mode assigned per asset,
 `immediate` assets keep responding autonomously while `hitl` assets respond never and record
@@ -187,16 +189,24 @@ revisited for the rebuild. It underpins decision 8, so an unexamined assumption 
 
 ## 11. Dashboard scope
 
-Not yet discussed. The PoC dashboard is ~104k lines of Next.js/TypeScript — larger than endpointmgr
-and `shared` combined. Whether it is in scope for the rebuild at all, rebuilt, or carried across,
-changes what the API surface must serve beyond the agent contract.
+Withdrawn — the dashboard is in scope and is carried across rather than rebuilt, with the surfaces
+the descope breaks rebuilt and the rest copied as-is and validated by a testing pass. There is no
+fork left to argue: the route-by-route sort already exists as evidence, and the one contested case
+is settled by decision 5.
+
+Guidance: [`rebuild/dashboard-carry-over.md`](rebuild/dashboard-carry-over.md) — what is rebuilt,
+what is removed, and why no structural conditions are imposed on the carried code.
+
+The API surface question this row used to carry is answered rather than open: paths do not change.
+The agent wire contract pins the `/api/v1/endpointmgr/…` prefix permanently, so re-cutting the
+dashboard's along module lines would leave one server answering two prefixes.
 
 ## 12. Language and framework baseline
 
-Python 3.11 / FastAPI / SQLAlchemy is the PoC's stack and the implicit assumption for the rebuild,
-but has not been recorded as a decision. Worth an explicit — and probably short — ADR rather than
-inheriting by default, since the modular-monolith question (decision 1) touches how boundaries are
-enforced, which is partly a language-tooling matter.
+The stack is preserved identically: Python 3.11 / FastAPI / SQLAlchemy on the backend, Next.js and
+TypeScript in the dashboard. What remains for this row is recording it, and settling the boundary
+tooling that decision 1 leans on — import-linter and the checks behind its §4.2 assertions are a
+language-tooling matter, and rule 2 of the carry-over rules names a check that does not exist yet.
 
 ## 13. Validation during the documentation phase
 

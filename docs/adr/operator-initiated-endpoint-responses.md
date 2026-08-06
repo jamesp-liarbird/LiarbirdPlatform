@@ -56,6 +56,11 @@ detection profile at manifest build time (`endpointmgr/api/manifests.py`).
 * `hitl` — **the agent returns without acting and waits for a server command.**
 * Unmatched or unrecognised — treated as `alert_only`, so the gate fails closed.
 
+One setting, two readers. On the endpoint `hitl` means *hold and wait for a command*, not *await
+approval* — the approval sense belonged to the deferred selector, which read the same value to
+decide whether to queue its own proposal for a human. The endpoint's meaning is enforced on the
+endpoint and survives; replacing the other is §4's business.
+
 ### 1.4 The approval queue has no producer, and is the entire operator surface
 
 `queue_response()` is called only from the deferred service's two selectors, and no route creates a
@@ -153,7 +158,7 @@ an operator surface in front of it.
 
 * `hitl` acquires a terminating behaviour, closing the silent gap in §1.5.
 * Roughly 2,400 lines of queue machinery are not carried across, and one of the background workers
-  that would otherwise need relocating under `carry-over-rules` rule 5 disappears with it.
+  that would otherwise need relocating under `backend-carry-over-rules` rule 5 disappears with it.
 * The operator gains an initiation path the product has never had, against a route already written.
 * Response state stops being modelled as a control surface it cannot be (§1.2).
 
@@ -279,7 +284,7 @@ fork.
 * [`../decision-backlog.md`](../decision-backlog.md) — decisions 5 and 7
 * [`architecture-style.md`](architecture-style.md) — §1.2 on deferred capabilities, §4.2 assertions 3
   and 5
-* [`../rebuild/carry-over-rules.md`](../rebuild/carry-over-rules.md) — rule 5 on background work, and
-  the row-claiming precedent that leaves with the queue
+* [`../rebuild/backend-carry-over-rules.md`](../rebuild/backend-carry-over-rules.md) — rule 5 on
+  background work, and the row-claiming precedent that leaves with the queue
 * [`../investigations/2026-08-05-endpointmgr-only-retirement-audit.md`](../investigations/2026-08-05-endpointmgr-only-retirement-audit.md)
   — the coupling map, §5.4 for the disrupt surface

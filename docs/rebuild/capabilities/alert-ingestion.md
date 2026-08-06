@@ -6,7 +6,8 @@ are already `endpointmgr`'s, so most of this capability carries across working.
 
 What follows is the delta: what holds, what the wire contract fixes, what changes, and what the alert
 record stops carrying. The cross-cutting structural changes are in
-[`../carry-over-rules.md`](../carry-over-rules.md); §6 notes which of them land hardest here.
+[`../backend-carry-over-rules.md`](../backend-carry-over-rules.md); §6 notes which land hardest
+here.
 
 ## 1. What already holds
 
@@ -46,6 +47,20 @@ a transient database error is silent alert loss on the agent-facing critical pat
 Commit the batch, then answer. On failure, return a status the agent retries on. Because the response
 carries a count rather than identifiers (§2), this is a status-code change inside a shape the field
 already accepts.
+
+**The agent already handles this correctly**, verified against its source rather than assumed. Any
+non-2xx returns an error from the send path, with 403-plus-revocation-body special-cased into revoked
+mode (`LiarbirdAgent/src/http_transport.rs:1307-1331`); the caller then requeues the whole batch at
+the front of its queue, preserving order (`src/alert_manager.rs:3935-3937`, `:4618-4627`). The queue
+is bounded — 10,000 alerts by default (`src/agent_config.rs:391`) — and overflow drops the oldest
+(`src/alert_manager.rs:1591-1593`).
+
+**So reject only when the write genuinely failed.** Requeue pushes to the front of the queue and
+overflow evicts from the front, so a batch the server keeps rejecting is the first thing dropped once
+the queue fills; the queue is also in memory, so an agent restart during an outage loses it. Retry is
+therefore durable only while there is headroom, which makes a blanket maintenance-mode `503` on this
+path expensive — it burns each endpoint's queue from the oldest end while new alerts keep arriving.
+A failed write is the only thing that should produce a retryable status here.
 
 ### 3.2 Nothing rewrites the record after it is written
 
@@ -131,14 +146,17 @@ with its own schema change.
   through, and §3.1 makes the row durable before the agent is told so. That is what makes a delivery
   outbox cheap here: the event is already persisted, so only delivery bookkeeping is new. The
   forwarder reads alerts through `endpoints`' public surface, not the table
-  ([`../carry-over-rules.md`](../carry-over-rules.md) rules 3 and 4).
+  ([`../backend-carry-over-rules.md`](../backend-carry-over-rules.md) rules 3 and 4).
 - **Retention and table shape (decision 9).** That decision owns whether `alerts` is partitioned and
   what purges it — nothing purges it today. Two things not to carry across ahead of it: the monthly
   range partitioning, and the partition-maintenance helper that ran in the descoped service's
   lifespan. Removing the second while keeping the first re-arms a resolved P0 (ISSUE-212) with a
   fuse set at the end of the hardcoded partition coverage.
-- **Automated analysis (decision 5).** The `ai_*` columns leave with §4. That decision is free to
-  bring automated analysis back with storage of its own; it is not constrained to these columns.
+- **Automated analysis (decision 5).** The `ai_*` columns leave with §4, and
+  [`../../adr/operator-initiated-endpoint-responses.md`](../../adr/operator-initiated-endpoint-responses.md)
+  §4.4 settles that automated selection returns as a module with storage of its own rather than by
+  refilling what was kept for it. Nothing is constrained to these columns.
+  [`response-lifecycle.md`](response-lifecycle.md) is that capability's brief.
 
 ## 6. Carry-over rules that land hardest here
 
@@ -158,8 +176,8 @@ with its own schema change.
 
 ## 7. Related
 
-- [`../carry-over-rules.md`](../carry-over-rules.md) — the structural changes that apply to all
-  carried code
+- [`../backend-carry-over-rules.md`](../backend-carry-over-rules.md) — the structural changes that
+  apply to all carried backend code
 - [`../../adr/architecture-style.md`](../../adr/architecture-style.md) — `endpoints` owns alerts, and
   §4.3's requirement that a capability name its owning module and public surface
 - [`../../adr/time-keyed-tables-with-bounded-retention.md`](../../adr/time-keyed-tables-with-bounded-retention.md)
