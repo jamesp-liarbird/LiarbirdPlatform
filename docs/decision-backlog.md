@@ -5,13 +5,16 @@ the exit criterion for the documentation phase.
 
 **Status values:** `open` — not started · `drafting` — ADR in progress · `proposed` — ADR written,
 awaiting its promotion trigger · `accepted` — closed · `deferred` — deliberately postponed, with a
-reason and a revisit trigger.
+reason and a revisit trigger · `withdrawn` — not a decision; settled elsewhere, with a pointer.
+
+Numbers are stable. A withdrawn row keeps its number rather than being removed, because
+investigations cite these numbers and are not edited once written.
 
 | # | Decision | Status | Blocked by |
 |---|---|---|---|
 | 1 | Architecture style — modular monolith vs alternatives | proposed | 8 (for §2.6, §3.7 only) |
 | 2 | ADR estate — numbering, prefix, foreign series | open | — |
-| 3 | Dropping Neo4j | open | — |
+| 3 | Dropping Neo4j | withdrawn | — |
 | 4 | Where agent-submitted alerts go without `analysis` | open | 1 |
 | 5 | Command/response lifecycle without `responder` | open | 1 |
 | 6 | SIEM forwarding ownership | open | 1 |
@@ -52,26 +55,37 @@ option, which removes it as a discriminator. Anyone revisiting 8's §2.6 or §3.
 
 ## 2. ADR estate
 
-Four numbering series across two repos: `ADR-001…005` in AgileFramework (with `005` misfiled
-outside `docs/adr/`), and `ADR-MT-*`, `ADR-M3-*`, `ADR-VM-*` existing only as `####` subsections
-inside `AgileFramework/docs/architecture-m3-multi-tenant.md` and `architecture-m3-vm-appliance.md`.
+Five numbering series, all in AgileFramework: `ADR-001…005` as files (with `005` misfiled outside
+`docs/adr/`); `ADR-MT-*` and `ADR-VM-*` as subsections inside
+`AgileFramework/docs/architecture-m3-multi-tenant.md` and `architecture-m3-vm-appliance.md`, the
+latter carrying a `VM-PATTERN-*` sibling series at the same altitude; and `ADR-M3-*` inside
+`AgileFramework/docs/epics.md`, cited by stories as `docs/epics-m3.md#ADR-M3-00N`, a path that no
+longer resolves.
+
+Alongside them sit ~45 unnumbered `Decision N.M` records in the M1, M2 and PoC architecture
+documents. They carry no IDs and no status fields, and one contradicts a numbered ADR: `archive/m2`
+Decision 1.1 has the agent MSI identical for all customers with the server address in the
+registration token, which `ADR-005` reverses on the finding that the URL is compile-time-only and the
+token's copy is ignored at runtime. Neither is marked superseded.
 
 Restarting at `001` here is the current intent. Open questions: whether this repo's series takes a
-prefix to avoid colliding with the AgileFramework numbers (the collision is live — the
-control-plane ADR's body cites AgileFramework's `ADR-001` on Zitadel organisations), and what
-becomes of the foreign series as their subject matter is re-decided here.
+prefix to avoid colliding with the AgileFramework numbers (the collision is live — the control-plane
+ADR cites `ADR-001` on Zitadel organisations in its body, and its `Related` line carries a bare
+`ADR-004` meaning AgileFramework's), and what becomes of the foreign series as their subject matter
+is re-decided here.
 
 Until this closes, ADRs are named and cross-referenced by slug.
 
 ## 3. Dropping Neo4j
 
-Stated as a scope decision at the outset but never argued, and it is load-bearing beyond deleting a
-client. Neo4j appears in only five endpointmgr files, but two are `tenant_provisioning.py` — where
-it is a step in the provisioning state machine (`STEP_NEO4J_DB`) — and `tenant_deprovisioning.py`,
-where it is an export step in the tenant data-extraction path.
+Withdrawn — the graph is not a platform component but the internal data model of `analysis` and
+`responder`, so it leaves with them under the endpointmgr-first constraint, which names it. Nothing
+in scope reads or writes it, and the PoC's export path already emits its Neo4j-absent archive
+whenever the graph is empty.
 
-So this changes the tenant lifecycle and the data-export obligation, not just the dependency list.
-Needs a short ADR recording what the graph was for, what is lost, and what if anything replaces it.
+Evidence: [`investigations/2026-08-06-neo4j-scope-exclusion.md`](investigations/2026-08-06-neo4j-scope-exclusion.md).
+Removing the client from the PoC is that repo's housekeeping. What the graph's correlation was doing,
+and whether anything replaces it, is decision 4's.
 
 ## 4. Where agent-submitted alerts go without `analysis`
 
@@ -80,6 +94,10 @@ service over `ANALYSIS_API_HOST`/`PORT` from `alert_forwarder.py`, `alert_proces
 `agent_registration.py`. With Analysis out of scope, alert ingestion, normalisation and storage
 need an owner. The agent-facing path cannot change (standing constraint), so this is a question
 about what sits behind it.
+
+Correlation comes with it. Alert enrichment, entity extraction and MITRE mapping were modelled in the
+Neo4j graph the dropped services owned (§3), so whether any of that is rebuilt, expressed
+relationally, or dropped is settled here rather than inherited.
 
 ## 5. Command/response lifecycle without `responder`
 

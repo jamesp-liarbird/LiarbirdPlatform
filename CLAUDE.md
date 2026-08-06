@@ -34,8 +34,9 @@ MADR — all marked `LOCAL`, so the template can be re-synced against a future M
 
 Numbering is unresolved (see the backlog), so ADRs are named and cross-referenced by slug for now
 and get a number when the estate decision lands. The org's existing series — plain `ADR-001…005` in
-AgileFramework, plus `ADR-MT-*`, `ADR-M3-*` and `ADR-VM-*` embedded as subsections inside
-`AgileFramework/docs/architecture-m3-*.md` — are foreign to this repo and are referenced by ID.
+AgileFramework, plus `ADR-MT-*`, `ADR-VM-*` and `VM-PATTERN-*` embedded as subsections inside
+`AgileFramework/docs/architecture-m3-*.md` and `ADR-M3-*` inside `AgileFramework/docs/epics.md` —
+are foreign to this repo and are referenced by ID.
 The frontmatter's `related` and `supersedes` carry those slugs and IDs as bare identifiers; a
 supersession that holds only in part is stated in More Information rather than qualified in place.
 
@@ -59,8 +60,9 @@ explicitly and argue for it.
   regions. Serving a tenant under another jurisdiction's residency requirement is an open question,
   not a configuration change.
 - **Scope is endpointmgr first.** The `analysis`, `forwardingrelay` and `responder` services are not
-  being brought across. Where endpointmgr reaches them today, that seam is a decision to be made,
-  not a dependency to be recreated.
+  being brought across, nor the Neo4j graph that held their alert-enrichment and MITRE model. Where
+  endpointmgr reaches them today, that seam is a decision to be made, not a dependency to be
+  recreated.
 
 ## Decision principles
 

@@ -474,5 +474,6 @@ proof-of-concept commit `14d9e9fb`, held at
 It reaches the same classification from the same artifacts and carries the fuller cost ranking,
 including four consequences this ADR does not reproduce: the inert SIEM control plane, the
 `neo4j_password` dependency in agent JWT authentication, the `MULTI_TENANT_MODE` default, and the
-partition roller's placement. Those bear on decisions 3, 4, 6 and 9 rather than on this one. The
+partition roller's placement. Those bear on decisions 4, 6 and 9, and on the Neo4j exclusion, rather
+than on this one. The
 claims above cite primary artifacts so that this ADR does not depend on it.
