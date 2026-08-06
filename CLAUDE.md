@@ -5,8 +5,7 @@ phase is architecture and decision records; it becomes the working code reposito
 decision backlog in `docs/decision-backlog.md` is cleared.
 
 `LiarbirdServer` is the proof-of-concept being rebuilt from. It is a source of *evidence*, never of
-*precedent* — "the PoC does X" is an observation to be argued from, not a reason to do X. Do not
-copy code from it into this repo.
+*precedent* — "the PoC does X" is an observation to be argued from, not a reason to do X.
 
 ## Reference conventions
 
