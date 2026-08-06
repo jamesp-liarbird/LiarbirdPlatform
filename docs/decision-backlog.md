@@ -83,10 +83,20 @@ about what sits behind it.
 
 ## 5. Command/response lifecycle without `responder`
 
-Agents call `agent/responses` and `response/command/{id}/acknowledge`. The `response.py` and
-`response_queue.py` routers, and the queue in `shared/services/response_queue.py`, span the
-endpointmgr/responder boundary. Which half survives, and what drives responses in the absence of
-the AI responder, is undecided.
+The standing constraint fixes the shape: responses execute on the endpoint, and the server holds
+configuration and a queue without doing any responding. Agents call `agent/responses` and
+`response/command/{id}/acknowledge`, and commands ride the heartbeat, so the server side is storage
+plus an HTTP handler rather than an orchestrator. `response.py`, `response_queue.py` and
+`shared/services/response_queue.py` split along that line — the queue and the agent-facing paths
+survive, response *selection* does not. Ramping runs on the agent and continues while disconnected,
+so server-side response state is a report rather than a control surface.
+
+What remains open is **HITL**. `AgileFramework/docs/technical-faq.md` commits to operator approval
+before any response executes — a per-detection decision taken after the detection, which
+pre-authorised configuration cannot express. Keeping it means the server retains response state, a
+dashboard approval surface, and `pending_response_expiry` as queue housekeeping; dropping it retires
+a customer-facing promise. It is a Product call, and it decides whether `pending_responses` carries
+working state or only a record.
 
 ## 6. SIEM forwarding ownership
 

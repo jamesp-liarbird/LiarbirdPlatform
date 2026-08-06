@@ -56,6 +56,9 @@ explicitly and argue for it.
 - **The agent wire contract.** Deployed agents already speak ~25 `/api/v1/endpointmgr/…` paths
   (register, bootstrap, heartbeat, refresh, alerts, responses, manifest, updates, uninstall). The
   server's API surface is constrained by what is already in the field.
+- **Detection is decoupled from response.** No response executes that an operator has not authorised
+  in advance, and the agent never decides a response at the point a detection fires. Responses
+  execute on the endpoint; the server configures the envelope and records what happened.
 - **Data stays in Australia/New Zealand.** Customer data at rest and in backups is held in AU/NZ
   regions. Serving a tenant under another jurisdiction's residency requirement is an open question,
   not a configuration change.
