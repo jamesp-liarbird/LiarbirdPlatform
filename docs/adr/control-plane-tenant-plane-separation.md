@@ -3,7 +3,7 @@
 **Status:** Proposed — moves to Accepted once the Phase 1 vertical slice confirms the two gates in §8.1
 **Date:** 2026-08-03
 **Deciders:** Platform / Engineering
-**Scope:** LiarbirdServer (`database/`, EagerBeaver `shared/tenant/`), `liarbird-helm`, `appliance/` (charts + `liarbirdctl`), `liarbird-infrastructure` (`gke-saas/` — §9 Phase 5)
+**Scope:** LiarbirdServer (`database/`, EagerBeaver `shared/tenant/`), `liarbird-helm`, `appliance/` (charts + `liarbirdctl`), `liarbird-infrastructure` (`gke-saas/`)
 **Related:** ADR-M3-003 (database-per-tenant), ADR-MT-008 (licence-based multi-tenancy), ADR-004 (SaaS tenant provisioning and tenant auth), ADR-VM-008 (database HA with K8s operators)
 **Supersedes in part:** the implicit placement decisions in Story M3-1.4 and migration `069`; the role
 matrix (`:186-196`) and permission matrix (`:199-212`) in
@@ -309,6 +309,9 @@ Consequences:
   exemption (for `liarbirdctl/src/retention/postgres.rs`) carries over unchanged.
 - `tenant_id` is retained on tenant-plane audit rows for export and merge convenience, but it no
   longer carries scope meaning and is not load-bearing for isolation.
+- Archive and export are produced **per lineage, in two shapes**: tenant-plane rows carry `tenant_id`,
+  control-plane rows do not (§2.9). One combined archive format would have to synthesise the scope
+  column this section exists to avoid.
 
 **Negative decision recorded: a unified cross-tenant audit view is not a requirement — at any tier.**
 Confirmed with Product (2026-08-03) as an oversight rather than a design intent. This covers both:
@@ -542,8 +545,8 @@ A lint asserting that every query against a control-plane table from a non-admin
 tenant predicate would address the ISSUE-219 class for roughly 5% of the effort.
 
 **Rejected as insufficient, not as wrong.** A lint reduces the recurrence rate of a bug class; it
-does not make it unreachable. It also cannot see a runtime connection's state. It remains worth
-doing as an interim measure if this ADR slips (see §9).
+does not make it unreachable. It also cannot see a runtime connection's state. It remains the fallback
+if §8.1's `FORCE RLS` gate fails, since control-plane protection then has nothing else to rest on.
 
 ### 3.2 Pool model with RLS only — no plane split
 
@@ -747,11 +750,20 @@ pool-sizing constraints above are in place. Known before reaching for them:
   PgBouncer has the same shape: prepared statements need PgBouncer ≥ 1.21 or
   `statement_cache_size=0` in the driver.
 
-**Backup and retention roles must bypass RLS.** `pg_dump` defaults to `row_security = off`, which
-errors rather than silently producing a partial dump — but `--enable-row-security` would silently
-truncate. The backup role must be superuser or hold `BYPASSRLS`. This aligns with the existing
-`audit_logs_block_mutation()` superuser exemption that lets `liarbirdctl/src/retention/postgres.rs`
-purge as `postgres`.
+**Backup, retention and archive roles must bypass RLS.** `pg_dump` defaults to `row_security = off`,
+which errors rather than silently producing a partial dump — but `--enable-row-security` would
+silently truncate. The backup role must be superuser or hold `BYPASSRLS`. This aligns with the
+existing `audit_logs_block_mutation()` superuser exemption that lets
+`liarbirdctl/src/retention/postgres.rs` purge as `postgres`.
+
+Archive is the third reader of these tables and the one where a missing bypass is hardest to notice:
+a truncated archive reports success, and the gap surfaces only when the archived rows are needed.
+`AgileFramework/docs/compliance/data-retention-and-disposal-policy.md` places an archive tier after
+the active window on alert and response data, on customer security telemetry and on application
+security logs, so an archive path is an obligation rather than an option. Which tables archive, for
+how long, and to what — [`time-keyed-tables-with-bounded-retention.md`](time-keyed-tables-with-bounded-retention.md)
+owns that. What this decision imposes is that whatever performs the archive holds the same bypass as
+backup, per tenant database.
 
 **No AUTOCOMMIT for control-plane queries.** `set_config(..., true)` is a silent no-op under
 AUTOCOMMIT. Existing AUTOCOMMIT connections (`bootstrap/runner.py:170`,
@@ -798,11 +810,12 @@ These are the difference between this design holding and eroding. Each is a test
 
 ## 8. Validation gates
 
-No question below can invalidate the decision — the design-killers identified during analysis were
-resolved by documentation and established practice, and **all product questions are closed** (§8.2).
-So there is **no separate proof-of-concept**: a PoC de-risks a decision before committing to it, and
-with nothing left that could force a different design it would be the build with a delete step at the
-end. These are validated *in place*, in the order §9 sequences the work.
+No question below can invalidate the decision. The design-killers identified during analysis were
+resolved by documentation and established practice, and the two Phase 1 checks in §8.1 — the only
+ones that could change anything — fail into a fallback or an implementation bug, not into a different
+design. So there is **no separate proof-of-concept**: a PoC de-risks a decision before committing to
+it, and with nothing left that could force a different design it would be the build with a delete step
+at the end. These are validated *in place*, in the order §9 sequences the work.
 
 ### 8.1 Technical — validated during implementation
 
@@ -826,57 +839,34 @@ first, with ~4 tables migrated rather than 90:
 |---|---|---|
 | Two-lineage runner with per-schema `schema_migrations` | Phase 2 | Effort estimate only |
 | Provisioning time: collapsed base schema vs 92 migrations | After base schema exists | Datapoint; informs §2.11's claim |
-| `pg_dump`/restore round-trip across both schemas **with RLS live** | Before cutover | Backup role constraint (§5) needs revisiting |
+| `pg_dump`/restore round-trip across both schemas **with RLS live** | Before first production deploy | Backup role constraint (§5) needs revisiting |
 
 Three questions were retired along the way: expressing three audit query modes as policies and
 measuring RLS overhead on a high-volume `audit_logs` (both moot once §2.7 moved tenant audit to the
 tenant plane), and verifying CNPG `Pooler` behaviour — deferred to §5, since no pooler is deployed and
 none is proposed.
 
-### 8.2 Product / compliance — all closed
-
-Recorded here so the reasoning survives; none of these block implementation.
-
-| Question | Decision | Where |
-|---|---|---|
-| Should platform-actor events also be copied to the control-plane audit? | **No.** The atomicity objection to dual-write does not weaken when the event class narrows, and the insider-threat motivation does not hold — both planes sit inside one credential domain. Durability redirected to the audit-export follow-up (§9) | §2.7, §3.6 |
-| Does Tier 0 (Instance Admin / Instance Support) need an all-tenant audit feed? | **No.** Confirmed with Product 2026-08-03 as an oversight, not design intent | §2.7 |
-| Does Tier 1 (MT Admin / MT Support) need a unified audit view across an MSSP's tenant group? | **No.** Asked explicitly and answered no, so the MSSP epic inherits no fan-out requirement | §2.7 |
-| Should the role/permission matrices in `architecture-m3-multi-tenant.md` be updated to match? | **No — this ADR supersedes them on audit scope.** They will not be edited; this document is the reference | Header, §2.7 |
-
 ---
 
-## 9. Sequencing
+## 9. Build order and follow-ups
 
-**Independent of this ADR, worth doing immediately** (retires the proven risk even if the split slips):
+**Build risky-first.** There is no separate PoC (§8); instead the order is chosen so the parts that
+could still surprise us land while the blast radius of being wrong is a day's work rather than the
+whole schema.
 
-1. Sentinel guard — refuse to start when a sentinel is configured alongside multi-tenancy.
-2. Deployment-shape guard — refuse to start when shape is not explicitly declared (§2.5, invariant 3).
-3. The filter lint from §3.1, as an interim measure.
+**Phase 1 — vertical slice.** Two schemas, two roles with role-level `search_path`, **one**
+control-plane table under `FORCE ROW LEVEL SECURITY`, **one** tenant-plane table, and the session
+dependency issuing `set_config(..., true)`. End to end, with invariants 6 and 7 as tests. This is the
+whole of what §8.1 calls a gate, exercised against ~4 tables instead of 90 — so a surprise costs a
+day, not a rewrite. The work is kept, not discarded.
 
-**Then build risky-first.** There is no separate PoC (§8); instead the phase order is chosen so the
-parts that could still surprise us land while the blast radius of being wrong is a day's work rather
-than a full migration.
+**Phase 2 — two-lineage migration runner**, with the fleet semantics of §2.13, the split Helm hooks,
+and the Compose bootstrap chain of §2.12. Local dev lands here rather than last because every later
+phase is developed against it.
 
-**Phase 1 — vertical slice, in the real codebase.** Two schemas, two roles with role-level
-`search_path`, **one** control-plane table under `FORCE ROW LEVEL SECURITY`, **one** tenant-plane table,
-and the session dependency issuing `set_config(..., true)`. End to end, with invariants 6 and 7 as
-tests. This is the whole of what §8.1 calls a gate, exercised against ~4 tables instead of 90 — so a
-surprise costs a day, not a rewrite. The work is kept, not discarded.
-
-**Phase 2** — two-lineage migration runner with the fleet semantics of §2.13, the split Helm hooks,
-and the Compose bootstrap chain of §2.12. Doing local dev here rather than last matters: every later phase is developed against it, and the
-`DEPLOYMENT_SHAPE` anchor fixes the one-service-only `MULTI_TENANT_MODE` bug in passing.
-**Phase 3** — base schema rewrite and plane assignment (§2.9), the one decision expensive to reverse.
-**Phase 4** — install-flow work: provisioning tenant #1, wizard validation, factory reset.
-**Phase 5** — cutover; backup/restore round-trip verified with RLS live before it. The cutover is a
-**parallel-stack rebuild, not an in-place migration**: a new Terraform root in
-`liarbird-infrastructure` (own state, alongside the existing `gke-saas/`) stands up the control
-database and tenant topology from the fresh base schemas, services cut over, and the old stack is
-torn down — staging's demo tenants are burned rather than migrated (§1.2). Prod deployment is
-deliberately manual today, so the rebuild re-executes every manual step; it is planned as
-"reproduce the environment from code and diff against the live one," which captures whatever DNS,
-TLS, and Zitadel configuration is not yet in Terraform or scripts.
+Plane assignment (§2.9) follows Phase 1 and is the decision most expensive to reverse, so it waits on
+the gates rather than leading. What comes after it — install flow, provisioning tenant #1, wizard
+validation — is product sequencing rather than this decision's to set.
 
 This ADR moves from Proposed to Accepted once Phase 1 confirms the two gates.
 
@@ -888,9 +878,16 @@ an append-only sink outside that authority — GCS with retention lock, Cloud Lo
 policy, or forwarding to a customer-held SIEM (the strongest option for the "who from the vendor touched
 my data" case, since the customer holds the copy).
 
-The shell already exists and is unwired: `analysis/siem/` ships a forwarder, connectors, and formatters,
-none of which reference audit — it carries alerts only. Wiring audit into it, plus a WORM retention
-target, is its own ADR or issue and does not block this one.
+A shell exists and is unwired: `analysis/siem/` ships a forwarder, connectors, and formatters, none of
+which reference audit — it carries alerts only. Whether that shell comes across at all is an open
+decision, so the follow-up cannot assume it.
+
+Two compliance obligations make this a dated commitment rather than a hardening idea:
+`AgileFramework/docs/compliance/logging-monitoring-and-audit-policy.md` requires log integrity
+protections against tampering, and the retention policy puts a one-year archive on application
+security logs. The arrival condition is the first attestation that asserts a tamper-evident audit
+trail — ISO 27001 or SOC 2, whichever lands first. Wiring audit into a forwarder, plus a WORM
+retention target, is still its own ADR and does not block this one.
 
 **Reversal condition.** If first revenue turns out to be appliance sales rather than SaaS, the
 cross-tenant security case largely evaporates — single-tenant deployments have no cross-tenant risk by
