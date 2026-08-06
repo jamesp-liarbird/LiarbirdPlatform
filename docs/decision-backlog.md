@@ -9,7 +9,7 @@ reason and a revisit trigger.
 
 | # | Decision | Status | Blocked by |
 |---|---|---|---|
-| 1 | Architecture style — modular monolith vs alternatives | open | — |
+| 1 | Architecture style — modular monolith vs alternatives | proposed | 8 (for §2.6, §3.7 only) |
 | 2 | ADR estate — numbering, prefix, foreign series | open | — |
 | 3 | Dropping Neo4j | open | — |
 | 4 | Where agent-submitted alerts go without `analysis` | open | 1 |
@@ -34,6 +34,21 @@ enforced boundaries is just the PoC with fewer ports.
 Gates decisions 4–7 and 12: under a monolith the abandoned service seams become in-process module
 contracts; under anything else they are network boundaries with their own failure modes. Writing
 the seams first means writing them twice.
+
+Proposed — [`adr/architecture-style.md`](adr/architecture-style.md): a coarse-grained modular
+monolith of about five modules with CI-enforced import contracts, deployed as two process roles
+(`web`, `scheduler`) from one image. Promotes when a Phase 1 vertical slice runs with its §4.2
+assertions green.
+
+The baseline finding is that the PoC is a distributed monolith, so the choice was never about
+process count — it is about what enforces boundaries and what the second module costs. Options C
+(separable modules), D (service per capability) and E (the baseline) are recorded as reachable
+upgrades with named triggers rather than as dead ends.
+
+Leans on decision 8 for what enforcement is available, not for its own outcome: §3.7 there
+establishes that `GRANT`/`REVOKE` is inert under owner topology, and §2.6 that `FORCE ROW LEVEL
+SECURITY` survives it but is row-scoped. So module-level data ownership is a CI concern under every
+option, which removes it as a discriminator. Anyone revisiting 8's §2.6 or §3.7 should re-read this.
 
 ## 2. ADR estate
 
