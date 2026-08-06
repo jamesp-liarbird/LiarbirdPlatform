@@ -37,6 +37,8 @@ Numbering is unresolved (see the backlog), so ADRs are named and cross-reference
 and get a number when the estate decision lands. The org's existing series — plain `ADR-001…005` in
 AgileFramework, plus `ADR-MT-*`, `ADR-M3-*` and `ADR-VM-*` embedded as subsections inside
 `AgileFramework/docs/architecture-m3-*.md` — are foreign to this repo and are referenced by ID.
+The frontmatter's `related` and `supersedes` carry those slugs and IDs as bare identifiers; a
+supersession that holds only in part is stated in More Information rather than qualified in place.
 
 The two ADRs carried over from the PoC repo predate this format. They keep their own structure and
 read backwards, as diffs against the running system. Treat them as content to build on, not as

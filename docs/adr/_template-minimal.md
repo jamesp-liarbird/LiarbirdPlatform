@@ -1,6 +1,6 @@
 <!--
-MADR 4.0 (https://github.com/adr/madr), vendored verbatim (minimal variant), vendored verbatim.
-House conventions for this repo are in CLAUDE.md.
+MADR 4.0 (https://github.com/adr/madr), minimal variant, vendored verbatim except where marked
+LOCAL. House conventions for this repo are in CLAUDE.md.
 -->
 
 # {short title, representative of solved problem and found solution}
@@ -23,6 +23,18 @@ Chosen option: "{title of option 1}", because {justification. e.g., only option,
 <!-- This is an optional element. Feel free to remove. -->
 ### Consequences
 
-* Good, because {positive consequence, e.g., improvement of one or more desired qualities, …}
-* Bad, because {negative consequence, e.g., compromising one or more desired qualities, …}
+<!-- LOCAL — grouped under labels rather than mixed "Good, because / Bad, because" bullets. Drop a
+     group that has nothing in it. Each bullet is a consequence, not a virtue. -->
+
+**Good**
+
+* {positive consequence, e.g., improvement of one or more desired qualities, …}
 * … <!-- numbers of consequences can vary -->
+
+**Neutral**
+
+* {consequence that weighs neither for good nor bad}
+
+**Bad**
+
+* {negative consequence, e.g., compromising one or more desired qualities, …}

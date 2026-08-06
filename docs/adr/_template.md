@@ -8,9 +8,14 @@ House conventions for this repo are in CLAUDE.md.
 # These are optional metadata elements. Feel free to remove any of them.
 status: "{proposed | rejected | accepted | deprecated | … | superseded by ADR-0123"
 date: {YYYY-MM-DD when the decision was last updated}
-decision-makers: {list everyone involved in the decision}
-consulted: {list everyone whose opinions are sought (typically subject-matter experts); and with whom there is a two-way communication}
-informed: {list everyone who is kept up-to-date on progress; and with whom there is a one-way communication}
+# LOCAL — upstream's decision-makers, consulted and informed are dropped; the three below replace
+# them. scope names the parts of the system the decision lands in, in the system's own structural
+# terms rather than as filesystem paths — proof-of-concept paths are provenance and belong in the
+# body as citations. related and supersedes take bare slugs and IDs: a supersession that holds only
+# in part is prose for More Information, not a frontmatter value.
+scope: {the parts of the system the decision lands in}
+related: {adr-slug, ADR-M3-003}
+supersedes: {adr-slug}
 ---
 
 # {short title, representative of solved problem and found solution}
@@ -50,9 +55,21 @@ Chosen option: "{title of option 1}", because {justification. e.g., only option,
 <!-- This is an optional element. Feel free to remove. -->
 ### Consequences
 
-* Good, because {positive consequence, e.g., improvement of one or more desired qualities, …}
-* Bad, because {negative consequence, e.g., compromising one or more desired qualities, …}
+<!-- LOCAL — upstream's mixed "Good, because / Bad, because" bullets are grouped under labels
+     instead. Drop a group that has nothing in it. Each bullet is a consequence, not a virtue. -->
+
+**Good**
+
+* {positive consequence, e.g., improvement of one or more desired qualities, …}
 * … <!-- numbers of consequences can vary -->
+
+**Neutral**
+
+* {consequence that weighs neither for good nor bad}
+
+**Bad**
+
+* {negative consequence, e.g., compromising one or more desired qualities, …}
 
 <!-- This is an optional element, but it is included in many ADRs. -->
 ### Confirmation
@@ -74,27 +91,39 @@ enforceable surface, name the test. Where there isn't, say so plainly rather tha
 <!-- This is an optional element. Feel free to remove. -->
 ## Pros and Cons of the Options
 
+<!-- LOCAL — grouped as in Consequences, but labelled Pros and Cons: this section evaluates options
+     not taken, where Consequences records what follows from the one taken. -->
+
 ### {title of option 1}
 
 <!-- This is an optional element. Feel free to remove. -->
 {example | description | pointer to more information | …}
 
-* Good, because {argument a}
-* Good, because {argument b}
-<!-- use "neutral" if the given argument weights neither for good nor bad -->
-* Neutral, because {argument c}
-* Bad, because {argument d}
+**Pros**
+
+* {argument a}
+* {argument b}
 * … <!-- numbers of pros and cons can vary -->
+
+**Neutral**
+
+* {argument c}
+
+**Cons**
+
+* {argument d}
 
 ### {title of other option}
 
 {example | description | pointer to more information | …}
 
-* Good, because {argument a}
-* Good, because {argument b}
-* Neutral, because {argument c}
-* Bad, because {argument d}
-* …
+**Pros**
+
+* {argument a}
+
+**Cons**
+
+* {argument b}
 
 <!-- This is an optional element. Feel free to remove. -->
 ## More Information
