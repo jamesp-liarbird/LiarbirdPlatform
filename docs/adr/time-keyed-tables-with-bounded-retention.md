@@ -64,7 +64,7 @@ live one.
 ### 1.2 Why this matters now
 
 The rebuild reaches this decision with no data to migrate, so the choice is free — and it is about to
-be made four times over, for the four tables in the same lifecycle class, with the same absence of
+be made five times over, for the five tables in the same lifecycle class, with the same absence of
 policy that produced the split above.
 
 Two properties raise the stakes beyond the PoC's:
@@ -104,22 +104,34 @@ Volume is deliberately *not* part of the definition. Volume is unknowable when t
 — assuming it is what produced §1.1 — whereas all three properties above are readable from the DDL
 on day one and assertable in CI. Volume enters this ADR only as the §2.4 threshold.
 
-**Register.** Every member, its time column, and its retention default:
+**Register.** Every member, its time column, its retention default, and what purges it:
 
-| Table | Plane | Time column | Retention default | Partitioned |
-|---|---|---|---|---|
-| `alerts` | tenant | `timestamp` | 90 days (max 3650) | No |
-| `audit_logs` | one per lineage (control-plane ADR §2.7) | `event_time` | 365 days | No |
-| `usage_metrics` | control | `metric_date` (`DATE`) | 13 months | No — bounded by construction |
-| `forwarding_session_history` | tenant | `ended_at` | configurable | No |
+| Table | Plane | Time column | Retention default | Purged by | Partitioned |
+|---|---|---|---|---|---|
+| `alerts` | tenant | `timestamp` | 90 days | `liarbirdctl` | No |
+| `response_actions` | tenant | `created_at` | 90 days | `liarbirdctl` | No |
+| `audit_logs` | one per lineage (control-plane ADR §2.7) | `event_time` | 365 days | `liarbirdctl` | No |
+| `usage_metrics` | control | `metric_date` (`DATE`) | 13 months | `endpointmgr/jobs/usage_aggregation.py` | No — bounded by construction |
+| `forwarding_session_history` | tenant | `ended_at` | 90 days, not configurable | `endpointmgr/services/forwarding_session_service.py` | No |
 
-Two entries carry qualifications. `usage_metrics` is an hourly aggregate with a
+The three `liarbirdctl` windows are operator-set through the appliance settings UI, validated to
+7–3650 days, and executed as one batched `DELETE` + `VACUUM ANALYZE` pass on a daily schedule
+(default 02:00 UTC) — `appliance/liarbirdctl/src/config/types.rs:226-262`,
+`appliance/liarbirdctl/src/retention/postgres.rs`. The same config object carries a fourth window,
+`attack_chains_days` at 180 days, against Neo4j; it leaves with the graph.
+
+Three entries carry qualifications. `usage_metrics` is an hourly aggregate with a
 `UNIQUE (tenant_id, metric_date, metric_hour)` upsert key, so its size is bounded by
 tenants × hours × 13 months regardless of activity — it can never reach a §2.4 threshold, and its
 current hour's rows are mutable, so it satisfies §2.1 only loosely. It is listed for completeness, not
 as a candidate. `forwarding_session_history` carries two `NOT NULL` timestamps; `ended_at` is the
 retention column, `started_at` serves range queries, and a conversion would have to pick one as the
-partition key.
+partition key; its period is also hardcoded — `SESSION_RETENTION_DAYS = 90` at
+`forwarding_session_service.py:36`, echoed as a literal in the API response at
+`forwarding_sessions.py:269` — so it fails §2.1's third criterion as written. Membership turns on
+lifecycle rather than configurability, so it stays in the register and the hardcoding is a defect
+against it. `response_actions` is the table the appliance settings UI calls `responses`; that short
+name does not exist in the schema.
 
 Adding a table to the schema that meets §2.1 means adding a row here. That is the artefact whose
 absence made the PoC's split invisible.
@@ -129,7 +141,7 @@ absence made the PoC's split invisible.
 Every member is a plain table with a `btree` index on its time column. Retention is a scheduled
 `DELETE` filtered on that column.
 
-The stated assumption is that per-tenant volumes for all four members sit two or more orders of
+The stated assumption is that per-tenant volumes for all five members sit two or more orders of
 magnitude below where partitioning pays for itself — below roughly 50M rows or 100 GB, where a
 `btree` on the time column serves range queries without the planning, locking, and catalog cost of a
 partition set. This assumption is **explicitly not yet measured**; §7 states what would falsify it
@@ -201,6 +213,43 @@ shelling out `kubectl exec … psql` against the CNPG primary — is appliance-s
 generalise to N tenant databases. Retention in the rebuild is a scheduled job in the data plane,
 parameterised by the register, reading each tenant's configured periods.
 
+**This is the first such job, not a replacement for one.** `liarbirdctl` runs as host systemd on the
+appliance, so the three tables it purges have no retention at all under SaaS: `liarbird-helm/` defines
+no `CronJob`, and no Python path purges `alerts`, `response_actions` or `audit_logs`. They grow
+unbounded in every SaaS tenant database today. That belongs beside §1.1's ISSUE-212 note as a second
+live consequence of retention having no owner inside the schema.
+
+Retention is also three jobs in two languages (register, `Purged by`), which is why the register
+carries the owner: consolidating them is part of the work, and a table whose purge lives somewhere
+unrecorded is the §3.2 failure in a new place.
+
+### 2.7 Where the register's periods deviate from the retention policy
+
+The register records what the system does. `AgileFramework/docs/compliance/data-retention-and-disposal-policy.md`
+states what it is obliged to do. They differ, and the differences are recorded here rather than
+resolved — reconciling them is a product and compliance decision, not an implementation one.
+
+| Implemented | Policy obligation | Deviation |
+|---|---|---|
+| `alerts` 90 days, then delete | Alert and response data — 1 year active + 2 years archive | Default under-retains by ~9 months; no archive |
+| `response_actions` 90 days, then delete | Alert and response data — as above | As above |
+| `audit_logs` 365 days, then delete | Security logs (application) — 90 days hot + 1 year archive | Active window exceeds the obligation; no archive |
+| `alerts` 90 days | Customer security telemetry — per contract, minimum 90 days active + 1 year archive | Meets the active floor exactly; no archive |
+
+**The structural deviation is tiering, not duration.** Every obligation above is two-tier — an active
+window followed by an archive window. The register is single-tier: retain, then delete. §2.5 leaves
+the hook (*detach-then-drop also leaves room to archive a partition before dropping it*) but there is
+no archive destination, and adding one is out of scope here. Its natural home is the audit-durability
+follow-up the control-plane ADR §9 already raises, which is where the WORM target — GCS with
+retention lock, or a customer-held SIEM — is being decided. The policy is scoped to data stored and
+retained in Australia/New Zealand and cites the Australian Privacy Act 1988, so an archive tier
+inherits a residency constraint.
+
+**The duration deviations are configuration, not architecture.** The 7–3650 range means an operator
+can set a policy-compliant window; nothing asserts that one has. The gap therefore differs by
+deployment shape: on the appliance the operator holding that setting is the customer, whereas under
+SaaS Liarbird is the operator and the job does not run at all (§2.6).
+
 ---
 
 ## 3. Considered and rejected
@@ -247,7 +296,7 @@ that supersedes this one.
 - `alerts` regains a single-column primary key and can be an FK target, removing the
   application-level integrity checks the PoC's comments call for.
 - Retention becomes a `DELETE` filtered on an indexed time column — correct, boring, and identical in
-  shape across all four members.
+  shape across all five members.
 - No service owns a partition roller, so service retirement cannot re-arm ISSUE-212.
 - The register makes the class enumerable, so the next table that qualifies inherits a decision
   instead of prompting a fresh guess.
@@ -345,7 +394,15 @@ decision is then made on a number — which is the one thing §1.1 shows was nev
   operations)
 - `database/init/01-schema.sql:209-210,300` — the partitioning decision and its only stated rationale
 - `appliance/liarbirdctl/src/retention/postgres.rs:58,162-166` — `DELETE`-based retention and its
-  non-pruning predicate
+  non-pruning predicate; `:25-45` — the three tables purged and their time columns
+- `appliance/liarbirdctl/src/config/types.rs:226-262` — retention windows, the 7–3650 validated range,
+  and the daily schedule
+- `EagerBeaver/src/endpointmgr/services/forwarding_session_service.py:36,447`,
+  `api/forwarding_sessions.py:269` — the hardcoded 90-day session-history window
+- `EagerBeaver/src/endpointmgr/jobs/usage_aggregation.py:36,130` — `usage_metrics` retention, the one
+  window not owned by `liarbirdctl`
+- AgileFramework `docs/compliance/data-retention-and-disposal-policy.md` — the retention obligations
+  §2.7 records deviations against
 - `EagerBeaver/src/shared/partition_management.py`, `src/analysis/main.py:150` — the roller and its
   sole caller
 - `EagerBeaver/src/analysis/main.py:507,793-852` — what admits an event to `alerts`
