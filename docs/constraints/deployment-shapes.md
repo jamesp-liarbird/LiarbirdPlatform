@@ -35,7 +35,7 @@ epic.
 
 So the question is not whether to build it. It is whether the rebuild carries it, and the answer
 changes what "self-hosted" is allowed to assume. Evidence, and the decisions that depend on it, are
-in [`investigations/2026-08-06-self-hosted-multi-tenancy.md`](investigations/2026-08-06-self-hosted-multi-tenancy.md).
+in [`investigations/2026-08-06-self-hosted-multi-tenancy.md`](../investigations/2026-08-06-self-hosted-multi-tenancy.md).
 
 ## Residency
 
@@ -57,6 +57,6 @@ routinely refuse.
 - The proof-of-concept's tenancy modes as implemented —
   `liarbird-docs/internal/how-it-works/multi-tenant-isolation.md` §2
 - Which packaging artifacts are live in the proof-of-concept —
-  `LiarbirdServer/docs/investigations/2026-07-31-deployment-shapes-audit.md`
+  [`investigations/2026-07-31-deployment-shapes-audit.md`](../investigations/2026-07-31-deployment-shapes-audit.md)
 - Storage topology per shape — §2.2 of
-  [`adr/control-plane-tenant-plane-separation.md`](adr/control-plane-tenant-plane-separation.md)
+  [`adr/control-plane-tenant-plane-separation.md`](../adr/control-plane-tenant-plane-separation.md)

@@ -40,10 +40,12 @@ None of them establishes a decision. If writing one surfaces a genuine fork it g
 
 Every ADR is tested against these. They are settled — a decision that breaks one needs to say so explicitly and argue for it.
 
-- **Two deployment shapes.** SaaS multi-tenant with isolated per-tenant databases, and single-tenant self-hosted. Both are first-class; neither is a degraded mode of the other. [`docs/deployment-shapes.md`](docs/deployment-shapes.md) records the full set of shapes and which are settled.
+- **Two deployment shapes.** SaaS multi-tenant with isolated per-tenant databases, and single-tenant self-hosted. Both are first-class; neither is a degraded mode of the other. [`docs/constraints/deployment-shapes.md`](docs/constraints/deployment-shapes.md) records the full set of shapes and which are settled.
 - **The agent wire contract.** Deployed agents already speak ~25 `/api/v1/endpointmgr/…` paths (register, bootstrap, heartbeat, refresh, alerts, responses, manifest, updates, uninstall). The server's API surface is constrained by what is already in the field.
 - **Data stays in Australia/New Zealand.** Customer data at rest and in backups is held in AU/NZ regions. Serving a tenant under another jurisdiction's residency requirement is an open question, not a configuration change.
 - **Scope is endpointmgr first.** The `analysis`, `forwardingrelay` and `responder` services are not being brought across, nor the Neo4j graph that held their alert-enrichment and MITRE model. Where endpointmgr reaches them today, that seam is a decision to be made, not a dependency to be recreated.
+
+A constraint with more detail than its bullet holds gets a document in `docs/constraints/`, one per constraint; the bullet stays the canonical short form and links to it. What is unresolved *at this altitude* stays in that document rather than becoming a backlog row — the backlog tracks decisions that need an ADR, and a question about what a constraint permits comes before one. Deployment shapes has such a question in its open cell.
 
 ## Decision principles
 
